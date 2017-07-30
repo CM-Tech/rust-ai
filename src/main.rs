@@ -1,10 +1,10 @@
-#[derive(Debug,Clone)]
+#[derive(Debug)] 
 struct Synapse {
     weight: f64,
     value: f64,
 }
 //Neuron has input derivatives to effect prev layer and weight derivatives to change weights
-#[derive(Debug,Clone)]
+#[derive(Debug)] 
 struct Neuron {
     synapses: Vec<Synapse>,
     weight_derivatives: Vec<f64>,
@@ -60,7 +60,7 @@ impl Neuron {
     }
 }
 //Layer Only has one type of derivative to store (to back prop to prev layer) its of the inputs type
-#[derive(Debug)]
+#[derive(Debug)] 
 struct Layer {
     neurons: Vec<Neuron>,
     derivatives: Vec<f64>,
