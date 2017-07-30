@@ -188,6 +188,6 @@ fn main() {
         println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
         println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
         println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
-        n.trainForSet(0.1, &xor_set);
+        n.train_for_set(0.1, &xor_set);
     }
 }
