@@ -51,7 +51,7 @@ impl Neuron {
         let synapses: Vec<Synapse> = vec![synapse; inputs as usize];
         let wderivatives: Vec<f64> = vec![1.0; inputs as usize];
         let vderivatives: Vec<f64> = vec![1.0; inputs as usize];
-       
+
         Neuron {
             synapses: synapses,
             weight_derivatives: wderivatives,
@@ -60,7 +60,7 @@ impl Neuron {
     }
 }
 //Layer Only has one type of derivative to store (to back prop to prev layer) its of the inputs type
-#[derive(Debug)] 
+#[derive(Debug)]
 struct Layer {
     neurons: Vec<Neuron>,
     derivatives: Vec<f64>,
@@ -88,7 +88,8 @@ impl Layer {
         let mut derivatives: Vec<f64> = Vec::with_capacity(in_len);
         for i in 0..in_len {
             for j in 0..self.neurons.len() {
-                derivatives.push(self.neurons[j].value_derivatives[i] / (self.neurons.len() as f64) *
+                derivatives.push(self.neurons[j].value_derivatives[i] /
+                                 (self.neurons.len() as f64) *
                                  deltas[j]);
             }
         }
@@ -117,25 +118,25 @@ impl Network {
         input
     }
     fn back_prop(&mut self, rate: f64, deltas: Vec<f64>) {
-        let mut deltaGrad:Vec<f64>=deltas.clone();
+        let mut deltaGrad: Vec<f64> = deltas.clone();
         for i in (0..self.layers.len()).rev() {
-            self.layers[i].back_prop(rate,deltaGrad);
-            deltaGrad=self.layers[i].derivatives.clone();
+            self.layers[i].back_prop(rate, deltaGrad);
+            deltaGrad = self.layers[i].derivatives.clone();
         }
     }
-    fn trainForPair(&mut self,rate:f64,pair:&TrainingPair){
+    fn trainForPair(&mut self, rate: f64, pair: &TrainingPair) {
         let mut deltas: Vec<f64> = self.ev(&pair.input);
-        for i in 0..deltas.len(){
-            deltas[i]=pair.output[i]-deltas[i];
+        for i in 0..deltas.len() {
+            deltas[i] = pair.output[i] - deltas[i];
         }
-        self.back_prop(rate,deltas);
+        self.back_prop(rate, deltas);
     }
-    fn trainForSet(&mut self,rate:f64,set:&TrainingSet){
-        
-        for i in 0..set.pairs.len(){
-            self.trainForPair(rate,&set.pairs[i]);
+    fn trainForSet(&mut self, rate: f64, set: &TrainingSet) {
+
+        for i in 0..set.pairs.len() {
+            self.trainForPair(rate, &set.pairs[i]);
         }
-        
+
     }
     fn create(inputs: i32, layer_sizes: &Vec<i32>, outputs: i32) -> Network {
         let mut layers: Vec<Layer> = Vec::with_capacity(2 + layer_sizes.len());
@@ -153,22 +154,40 @@ impl Network {
     }
 }
 struct TrainingPair {
-    input:Vec<f64>,
-    output:Vec<f64>
+    input: Vec<f64>,
+    output: Vec<f64>,
 }
 struct TrainingSet {
-    pairs:Vec<TrainingPair>,
+    pairs: Vec<TrainingPair>,
 }
 fn main() {
-    let mut xorSet:TrainingSet=TrainingSet{pairs:vec![TrainingPair{input:vec![1.0, 0.0],output:vec![1.0]},TrainingPair{input:vec![0.0, 1.0],output:vec![1.0]},TrainingPair{input:vec![0.0, 0.0],output:vec![0.0]},TrainingPair{input:vec![1.0, 1.0],output:vec![0.0]}]};
+    let mut xorSet: TrainingSet = TrainingSet {
+        pairs: vec![TrainingPair {
+                        input: vec![1.0, 0.0],
+                        output: vec![1.0],
+                    },
+                    TrainingPair {
+                        input: vec![0.0, 1.0],
+                        output: vec![1.0],
+                    },
+                    TrainingPair {
+                        input: vec![0.0, 0.0],
+                        output: vec![0.0],
+                    },
+                    TrainingPair {
+                        input: vec![1.0, 1.0],
+                        output: vec![0.0],
+                    }],
+    };
     let mut n = Network::create(2, &vec![2], 1);
     //println!("network: {:?}", n);
-    for i in 0..10{
-        println!("iter # {:?}",i);
+    for i in 0..10 {
+        println!("-------------------");
+        println!("Iteration #{:?}", i);
         println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
         println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
         println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
         println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
-        n.trainForSet(0.01,&xorSet);
+        n.trainForSet(0.01, &xorSet);
     }
 }
