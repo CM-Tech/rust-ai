@@ -11,29 +11,27 @@ struct Neuron {
     value_derivatives: Vec<f64>,
 }
 impl Neuron {
-    fn load_inputs(&mut self, inputs: &Vec<f64>) {
+    fn update_inputs(&mut self, inputs: &Vec<f64>) {
         for i in 0..self.synapses.len() {
             self.synapses[i].value = inputs[i];
         }
     }
     fn activate(&self) -> f64 {
-        let mut sum: f64 = 0.0;
-        for i in 0..self.synapses.len() {
-            sum += self.synapses[i].value * self.synapses[i].weight;
-        }
+        let sum = self.synapses
+            .iter()
+            .fold(0.0, |acc, ref synapse| acc + synapse.value * synapse.weight);
         1.0 / (1.0 + sum.exp())
     }
     fn calc_derivatives(&mut self) {
+        let sum = self.synapses
+            .iter()
+            .fold(0.0, |acc, ref synapse| acc + synapse.value * synapse.weight);
+        let base_grad: f64 = sum.exp() / (sum.exp() + 1.0) / (sum.exp() + 1.0);
         let mut wderivatives: Vec<f64> = Vec::with_capacity(self.synapses.len());
         let mut vderivatives: Vec<f64> = Vec::with_capacity(self.synapses.len());
-        let mut sum: f64 = 0.0;
-        for i in 0..self.synapses.len() {
-            sum += self.synapses[i].value * self.synapses[i].weight;
-        }
-        let base_grad: f64 = sum.exp() / (sum.exp() + 1.0) / (sum.exp() + 1.0);
-        for i in 0..self.synapses.len() {
-            wderivatives.push(self.synapses[i].value * base_grad);
-            vderivatives.push(self.synapses[i].weight * base_grad);
+        for synapse in &self.synapses {
+            wderivatives.push(synapse.value * base_grad);
+            vderivatives.push(synapse.weight * base_grad);
         }
         self.weight_derivatives = wderivatives;
         self.value_derivatives = vderivatives;
@@ -65,23 +63,21 @@ struct Layer {
     derivatives: Vec<f64>,
 }
 impl Layer {
-    fn load_inputs(&mut self, inputs: &Vec<f64>) {
+    fn update_inputs(&mut self, inputs: &Vec<f64>) {
         for i in 0..self.neurons.len() {
-            self.neurons[i].load_inputs(inputs);
+            self.neurons[i].update_inputs(inputs);
         }
     }
     fn ev(&self) -> Vec<f64> {
-        let mut out: Vec<f64> = vec![0.0; self.neurons.len()];
-        for i in 0..self.neurons.len() {
-            out[i] = self.neurons[i].activate();
-        }
-        out
+        self.neurons
+            .iter()
+            .map(|ref iter| iter.activate())
+            .collect()
     }
-    fn back_prop(&mut self, rate: f64, deltas: Vec<f64>) {
-        for j in 0..self.neurons.len() {
-            self.neurons[j].calc_derivatives();
-            //println!("Deriv {:?}",self.neurons[j].weight_derivatives);
-            self.neurons[j].back_prop(rate, deltas[j]);
+    fn back_prop(&mut self, rate: f64, deltas: &Vec<f64>) {
+        for (j, neuron) in self.neurons.iter_mut().enumerate() {
+            neuron.calc_derivatives();
+            neuron.back_prop(rate, deltas[j]);
         }
         let in_len: usize = self.neurons[0].synapses.len();
         let mut derivatives: Vec<f64> = Vec::with_capacity(in_len);
@@ -108,19 +104,21 @@ struct Network {
 }
 impl Network {
     fn ev(&mut self, inputs: &Vec<f64>) -> Vec<f64> {
-        let mut input: Vec<f64> = inputs.clone();
-        for i in 0..self.layers.len() {
-            self.layers[i].load_inputs(&input);
-            input = self.layers[i].ev();
-        }
-        input
+        self.layers
+            .iter_mut()
+            .fold(inputs.clone(), |prev, ref mut curr| {
+                curr.update_inputs(&prev);
+                curr.ev()
+            })
     }
     fn back_prop(&mut self, rate: f64, deltas: Vec<f64>) {
-        let mut delta_grad: Vec<f64> = deltas.clone();
-        for i in (0..self.layers.len()).rev() {
-            self.layers[i].back_prop(rate, delta_grad);
-            delta_grad = self.layers[i].derivatives.clone();
-        }
+        self.layers
+            .iter_mut()
+            .rev()
+            .fold(deltas.clone(), |delta_grad, ref mut layer| {
+                layer.back_prop(rate, &delta_grad);
+                layer.derivatives.clone()
+            });
     }
     fn train_for_pair(&mut self, rate: f64, pair: &TrainingPair) {
         let mut deltas: Vec<f64> = self.ev(&pair.input);
@@ -176,8 +174,8 @@ fn main() {
 
     test_xor(&mut n);
     for _ in 0..10000 {
-        for i in 0..xor_set.len() {
-            n.train_for_pair(0.1, &xor_set[i]);
+        for xor_pair in &xor_set {
+            n.train_for_pair(0.1, &xor_pair);
         }
     }
     test_xor(&mut n);
