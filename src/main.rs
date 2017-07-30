@@ -68,7 +68,6 @@ impl Layer {
     fn load_inputs(&mut self, inputs: &Vec<f64>) {
         for i in 0..self.neurons.len() {
             self.neurons[i].load_inputs(inputs);
-
         }
     }
     fn ev(&self) -> Vec<f64> {
@@ -149,6 +148,13 @@ struct TrainingPair {
     input: Vec<f64>,
     output: Vec<f64>,
 }
+fn test_xor(network: &mut Network) {
+    println!("-------------------");
+    println!("eval 1.0,0.0: {:?}", network.ev(&vec![1.0, 0.0]));
+    println!("eval 0.0,1.0: {:?}", network.ev(&vec![0.0, 1.0]));
+    println!("eval 1.0,1.0: {:?}", network.ev(&vec![1.0, 1.0]));
+    println!("eval 0.0,0.0: {:?}", network.ev(&vec![0.0, 0.0]));
+}
 fn main() {
     let xor_set = [TrainingPair {
                        input: vec![1.0, 0.0],
@@ -168,20 +174,11 @@ fn main() {
                    }];
     let mut n = Network::create(2, &vec![2, 2], 1);
 
-    println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
-    println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
-    println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
-    println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
-    println!("-------------------");
-
+    test_xor(&mut n);
     for _ in 0..10000 {
         for i in 0..xor_set.len() {
             n.train_for_pair(0.1, &xor_set[i]);
         }
     }
-
-    println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
-    println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
-    println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
-    println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
+    test_xor(&mut n);
 }
