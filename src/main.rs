@@ -132,9 +132,9 @@ impl Network {
         }
         self.back_prop(rate, deltas);
     }
-    fn train_for_set(&mut self, rate: f64, set: &TrainingSet) {
-        for i in 0..set.pairs.len() {
-            self.train_for_pair(rate, &set.pairs[i]);
+    fn train_for_set(&mut self, rate: f64, set: &Vec<TrainingPair>) {
+        for i in 0..set.len() {
+            self.train_for_pair(rate, &set[i]);
         }
     }
     fn create(inputs: i32, layer_sizes: &Vec<i32>, outputs: i32) -> Network {
@@ -156,28 +156,23 @@ struct TrainingPair {
     input: Vec<f64>,
     output: Vec<f64>,
 }
-struct TrainingSet {
-    pairs: Vec<TrainingPair>,
-}
 fn main() {
-    let xor_set: TrainingSet = TrainingSet {
-        pairs: vec![TrainingPair {
-                        input: vec![1.0, 0.0],
-                        output: vec![1.0],
-                    },
-                    TrainingPair {
-                        input: vec![0.0, 1.0],
-                        output: vec![1.0],
-                    },
-                    TrainingPair {
-                        input: vec![0.0, 0.0],
-                        output: vec![0.0],
-                    },
-                    TrainingPair {
-                        input: vec![1.0, 1.0],
-                        output: vec![0.0],
-                    }],
-    };
+    let xor_set: Vec<TrainingPair> = vec![TrainingPair {
+                                              input: vec![1.0, 0.0],
+                                              output: vec![1.0],
+                                          },
+                                          TrainingPair {
+                                              input: vec![0.0, 1.0],
+                                              output: vec![1.0],
+                                          },
+                                          TrainingPair {
+                                              input: vec![0.0, 0.0],
+                                              output: vec![0.0],
+                                          },
+                                          TrainingPair {
+                                              input: vec![1.0, 1.0],
+                                              output: vec![0.0],
+                                          }];
     let mut n = Network::create(2, &vec![2, 2], 1);
     //println!("network: {:?}", n);
     println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
