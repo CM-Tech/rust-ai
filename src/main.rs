@@ -7,7 +7,7 @@ struct Neuron {
     derivatives: Vec<f64>,
 }
 impl Neuron {
-    fn loadInputs(&mut self, inputs: &Vec<f64>) {
+    fn load_inputs(&mut self, inputs: &Vec<f64>) {
         for i in 0..self.synapses.len() {
             self.synapses[i].value = inputs[i];
         }
@@ -37,9 +37,9 @@ impl Neuron {
         let mut derivatives: Vec<f64> = Vec::with_capacity(inputs as usize);
         for i in 0..inputs {
             synapses.push(Synapse {
-                weight: 0.5,
-                value: 0.0,
-            });
+                              weight: 0.5,
+                              value: 0.0,
+                          });
             derivatives.push(1.0);
         }
         Neuron {
@@ -54,13 +54,11 @@ struct Layer {
     derivatives: Vec<f64>,
 }
 impl Layer {
-    fn loadInputs(&mut self, inputs: &Vec<f64>) {
-
+    fn load_inputs(&mut self, inputs: &Vec<f64>) {
         for i in 0..self.neurons.len() {
-            self.neurons[i].loadInputs(inputs);
+            self.neurons[i].load_inputs(inputs);
 
         }
-
     }
     fn ev(&self) -> Vec<f64> {
         let mut out: Vec<f64> = vec![0.0; self.neurons.len()];
@@ -70,9 +68,9 @@ impl Layer {
         out
     }
     fn calcDerivatives(&mut self) {
-        let inLen: usize = self.neurons[0].synapses.len();
-        let mut derivatives: Vec<f64> = Vec::with_capacity(inLen);
-        for i in 0..inLen {
+        let in_len: usize = self.neurons[0].synapses.len();
+        let mut derivatives: Vec<f64> = Vec::with_capacity(in_len);
+        for i in 0..in_len {
             for j in 0..self.neurons.len() {
                 derivatives.push(self.neurons[j].derivatives[i] / (self.neurons.len() as f64));
             }
@@ -102,7 +100,7 @@ impl Network {
     fn ev(&mut self, inputs: &Vec<f64>) -> Vec<f64> {
         let mut input: Vec<f64> = inputs.clone();
         for i in 0..self.layers.len() {
-            self.layers[i].loadInputs(&input);
+            self.layers[i].load_inputs(&input);
             input = self.layers[i].ev();
         }
         input
@@ -124,7 +122,7 @@ impl Network {
 }
 struct TrainingPair {}
 fn main() {
-    let n = Network::create(2,vec![2],1);
-    println!("network: {:?}", n);
-    println!("eval: {:?}", n.ev(&vec![1.0,0.0]));
+    let mut n = Network::create(2, vec![2], 1);
+    //println!("network: {:?}", n);
+    println!("eval: {:?}", n.ev(&vec![1.0, 0.0]));
 }
