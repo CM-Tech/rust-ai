@@ -1,0 +1,6 @@
+[package]
+name = "rust-ai"
+version = "0.1.0"
+authors = ["Cole Kissane <coler706@gmail.com>"]
+
+[dependencies]
