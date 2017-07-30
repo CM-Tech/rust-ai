@@ -26,9 +26,9 @@ impl Neuron {
         let sum = self.synapses
             .iter()
             .fold(0.0, |acc, ref synapse| acc + synapse.value * synapse.weight);
-        let base_grad: f64 = sum.exp() / (sum.exp() + 1.0) / (sum.exp() + 1.0);
-        let mut wderivatives: Vec<f64> = Vec::with_capacity(self.synapses.len());
-        let mut vderivatives: Vec<f64> = Vec::with_capacity(self.synapses.len());
+        let base_grad = sum.exp() / (sum.exp() + 1.0) / (sum.exp() + 1.0);
+        let mut wderivatives = Vec::with_capacity(self.synapses.len());
+        let mut vderivatives = Vec::with_capacity(self.synapses.len());
         for synapse in &self.synapses {
             wderivatives.push(synapse.value * base_grad);
             vderivatives.push(synapse.weight * base_grad);
@@ -46,9 +46,9 @@ impl Neuron {
             weight: 0.5,
             value: 0.0,
         };
-        let synapses: Vec<Synapse> = vec![synapse; inputs as usize];
-        let wderivatives: Vec<f64> = vec![1.0; inputs as usize];
-        let vderivatives: Vec<f64> = vec![1.0; inputs as usize];
+        let synapses = vec![synapse; inputs as usize];
+        let wderivatives = vec![1.0; inputs as usize];
+        let vderivatives = vec![1.0; inputs as usize];
 
         Neuron {
             synapses: synapses,
@@ -78,7 +78,7 @@ impl Layer {
             neuron.calc_derivatives();
             neuron.back_prop(rate, deltas[j]);
         }
-        let in_len: usize = self.neurons[0].synapses.len();
+        let in_len = self.neurons[0].synapses.len();
         let mut derivatives = vec![0.0; in_len];
         for i in 0..in_len {
             for j in 0..self.neurons.len() {
@@ -89,7 +89,7 @@ impl Layer {
         derivatives
     }
     fn create(inputs: i32, outputs: i32) -> Layer {
-        let neurons: Vec<Neuron> = vec![Neuron::create(inputs); outputs as usize];
+        let neurons = vec![Neuron::create(inputs); outputs as usize];
         Layer { neurons: neurons }
     }
 }
@@ -113,14 +113,14 @@ impl Network {
                   |delta_grad, ref mut layer| layer.back_prop(rate, &delta_grad));
     }
     fn train_for_pair(&mut self, rate: f64, pair: &TrainingPair) {
-        let mut deltas: Vec<f64> = self.ev(&pair.input);
+        let mut deltas = self.ev(&pair.input);
         for i in 0..deltas.len() {
             deltas[i] = pair.output[i] - deltas[i];
         }
         self.back_prop(rate, deltas);
     }
     fn create(inputs: i32, layer_sizes: &Vec<i32>, outputs: i32) -> Network {
-        let mut layers: Vec<Layer> = Vec::with_capacity(2 + layer_sizes.len());
+        let mut layers = Vec::with_capacity(2 + layer_sizes.len());
         layers.push(Layer::create(inputs, inputs));
         if layer_sizes.len() > 0 {
             layers.push(Layer::create(inputs, layer_sizes[0]));
