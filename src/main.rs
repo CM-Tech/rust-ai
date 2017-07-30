@@ -40,7 +40,7 @@ impl Neuron {
     }
     fn back_prop(&mut self, rate: f64, delta: f64) {
         for i in 0..self.synapses.len() {
-            self.synapses[i].weight += delta / self.weight_derivatives[i] * rate;
+            self.synapses[i].weight += delta * self.weight_derivatives[i] * rate;
         }
     }
     fn create(inputs: i32) -> Neuron {
@@ -82,15 +82,17 @@ impl Layer {
     fn back_prop(&mut self, rate: f64, deltas: Vec<f64>) {
         for j in 0..self.neurons.len() {
             self.neurons[j].calc_derivatives();
+            //println!("Deriv {:?}",self.neurons[j].weight_derivatives);
             self.neurons[j].back_prop(rate, deltas[j]);
         }
         let in_len: usize = self.neurons[0].synapses.len();
         let mut derivatives: Vec<f64> = Vec::with_capacity(in_len);
         for i in 0..in_len {
+            derivatives.push(0.0);
             for j in 0..self.neurons.len() {
-                derivatives.push(self.neurons[j].value_derivatives[i] /
+                derivatives[i]+=self.neurons[j].value_derivatives[i] /
                                  (self.neurons.len() as f64) *
-                                 deltas[j]);
+                                 deltas[j];
             }
         }
         self.derivatives = derivatives;
@@ -177,15 +179,15 @@ fn main() {
                         output: vec![0.0],
                     }],
     };
-    let mut n = Network::create(2, &vec![2], 1);
+    let mut n = Network::create(2, &vec![2,2], 1);
     //println!("network: {:?}", n);
-    for i in 0..10{
-        println!("iter # {:?}",i);
-        println!("network: {:?}", n);
+    for i in 0..10000 {
+        println!("-------------------");
+        println!("Iteration #{:?}", i);
         println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
         println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
         println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
         println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
-        n.train_for_set(0.01, &xor_set);
+        n.trainForSet(0.1, &xorSet);
     }
 }
