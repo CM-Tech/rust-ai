@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct Neuron {
     weights: Vec<f64>,
 }
@@ -30,11 +30,7 @@ impl Layer {
         out
     }
     fn create(inputs: i32, outputs: i32) -> Layer {
-        let mut neurons: Vec<Neuron> = Vec::with_capacity(outputs as usize);
-        for _ in 0..outputs {
-            neurons.push(Neuron::create(inputs));
-        }
-        Layer { neurons: neurons }
+        Layer { neurons: vec![Neuron::create(inputs); outputs as usize] }
     }
 }
 #[derive(Debug)]
