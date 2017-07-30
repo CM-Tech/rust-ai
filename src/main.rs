@@ -1,16 +1,15 @@
-struct Synapse{
+struct Synapse {
     weight: f64,
-    value:f64
-
+    value: f64,
 }
 struct Neuron {
     synapses: Vec<Synapse>,
-    derivatives:Vec<f64>
+    derivatives: Vec<f64>,
 }
 impl Neuron {
-    fn loadInputs(&mut self, inputs: &Vec<f64>){
-        for i in 0.. self.synapses.len() {
-            self.synapses[i].value=inputs[i];
+    fn loadInputs(&mut self, inputs: &Vec<f64>) {
+        for i in 0..self.synapses.len() {
+            self.synapses[i].value = inputs[i];
         }
     }
     fn activate(&self) -> f64 {
@@ -26,38 +25,42 @@ impl Neuron {
         for i in 0..self.synapses.len() {
             sum += self.synapses[i].value * self.synapses[i].weight;
         }
-        let mut baseGrad:f64=sum.exp()/(sum.exp()+1.0)/(sum.exp()+1.0);
+        let mut baseGrad: f64 = sum.exp() / (sum.exp() + 1.0) / (sum.exp() + 1.0);
         for i in 0..self.synapses.len() {
-            derivatives.push(self.synapses[i].value*baseGrad);
+            derivatives.push(self.synapses[i].value * baseGrad);
         }
-        self.derivatives=derivatives;
+        self.derivatives = derivatives;
     }
-    fn backProp(&mut self,rate:f64,delta:f64){
-
-    }
+    fn backProp(&mut self, rate: f64, delta: f64) {}
     fn create(inputs: i32) -> Neuron {
         let mut synapses: Vec<Synapse> = Vec::with_capacity(inputs as usize);
         let mut derivatives: Vec<f64> = Vec::with_capacity(inputs as usize);
         for i in 0..inputs {
-            synapses.push(Synapse {weight:0.5, value:0.0});
+            synapses.push(Synapse {
+                weight: 0.5,
+                value: 0.0,
+            });
             derivatives.push(1.0);
         }
-        Neuron { synapses: synapses,derivatives:derivatives }
+        Neuron {
+            synapses: synapses,
+            derivatives: derivatives,
+        }
     }
 }
 #[derive(Debug)]
 struct Layer {
     neurons: Vec<Neuron>,
-    derivatives:Vec<f64>
+    derivatives: Vec<f64>,
 }
 impl Layer {
     fn loadInputs(&mut self, inputs: &Vec<f64>) {
-        
+
         for i in 0..self.neurons.len() {
             self.neurons[i].loadInputs(inputs);
-            
+
         }
-        
+
     }
     fn ev(&self) -> Vec<f64> {
         let mut out: Vec<f64> = vec![0.0; self.neurons.len()];
@@ -66,26 +69,29 @@ impl Layer {
         }
         out
     }
-    fn  calcDerivatives(&mut self)  {
-        let inLen:usize=self.neurons[0].synapses.len();
+    fn calcDerivatives(&mut self) {
+        let inLen: usize = self.neurons[0].synapses.len();
         let mut derivatives: Vec<f64> = Vec::with_capacity(inLen);
         for i in 0..inLen {
             for j in 0..self.neurons.len() {
-                derivatives.push(self.neurons[j].derivatives[i]/(self.neurons.len() as f64));
+                derivatives.push(self.neurons[j].derivatives[i] / (self.neurons.len() as f64));
             }
         }
-        self.derivatives=derivatives;
+        self.derivatives = derivatives;
     }
     fn create(inputs: i32, outputs: i32) -> Layer {
         let mut neurons: Vec<Neuron> = Vec::with_capacity(outputs as usize);
         for i in 0..outputs {
             neurons.push(Neuron::create(inputs));
         }
-         let mut derivatives: Vec<f64> = Vec::with_capacity(inputs as usize);
+        let mut derivatives: Vec<f64> = Vec::with_capacity(inputs as usize);
         for i in 0..inputs {
             derivatives.push(1.0);
         }
-        Layer { neurons: neurons ,derivatives:derivatives}
+        Layer {
+            neurons: neurons,
+            derivatives: derivatives,
+        }
     }
 }
 #[derive(Debug)]
@@ -116,9 +122,7 @@ impl Network {
         Network { layers: layers }
     }
 }
-struct TrainingPair {
-    
-}
+struct TrainingPair {}
 fn main() {
     let n = Network::create(2,vec![2],1);
     println!("network: {:?}", n);
