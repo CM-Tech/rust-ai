@@ -1,3 +1,4 @@
+#[derive(Debug)]
 struct Neuron {
     weights: Vec<f64>,
 }
@@ -13,13 +14,10 @@ impl Neuron {
         1.0 / (1.0 + value.exp())
     }
     fn create(inputs: i32) -> Neuron {
-        let mut weights: Vec<f64> = Vec::with_capacity(inputs as usize);
-        for i in 0..inputs {
-            weights.push(0.5);
-        }
-        Neuron { weights: weights }
+        Neuron { weights: vec![0.5; inputs as usize] }
     }
 }
+#[derive(Debug)]
 struct Layer {
     neurons: Vec<Neuron>,
 }
@@ -33,12 +31,13 @@ impl Layer {
     }
     fn create(inputs: i32, outputs: i32) -> Layer {
         let mut neurons: Vec<Neuron> = Vec::with_capacity(outputs as usize);
-        for i in 0..outputs {
+        for _ in 0..outputs {
             neurons.push(Neuron::create(inputs));
         }
         Layer { neurons: neurons }
     }
 }
+#[derive(Debug)]
 struct Network {
     layers: Vec<Layer>,
 }
@@ -50,15 +49,15 @@ impl Network {
         }
         input
     }
-    fn create(inputs: i32, layerSizes: &Vec<i32>, outputs: i32) -> Network {
-        let mut layers: Vec<Layer> = Vec::with_capacity(2 + layerSizes.len());
+    fn create(inputs: i32, layer_sizes: Vec<i32>, outputs: i32) -> Network {
+        let mut layers: Vec<Layer> = Vec::with_capacity(2 + layer_sizes.len());
         layers.push(Layer::create(inputs, inputs));
-        if layerSizes.len() > 0 {
-            layers.push(Layer::create(inputs, layerSizes[0]));
-            for i in 1..layerSizes.len() {
-                layers.push(Layer::create(layerSizes[i - 1], layerSizes[i]));
+        if layer_sizes.len() > 0 {
+            layers.push(Layer::create(inputs, layer_sizes[0]));
+            for i in 1..layer_sizes.len() {
+                layers.push(Layer::create(layer_sizes[i - 1], layer_sizes[i]));
             }
-            layers.push(Layer::create(layerSizes[layerSizes.len() - 1], outputs));
+            layers.push(Layer::create(layer_sizes[layer_sizes.len() - 1], outputs));
         } else {
             layers.push(Layer::create(inputs, outputs));
         }
@@ -66,6 +65,7 @@ impl Network {
     }
 }
 fn main() {
-    let n = 12.0;
-    println!("Hello, world! {}", n);
+    let n = Network::create(2,vec![2],1);
+    println!("network: {:?}", n);
+    println!("eval: {:?}", n.ev(&vec![1.0,0.0]));
 }
