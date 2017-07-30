@@ -130,11 +130,6 @@ impl Network {
         }
         self.back_prop(rate, deltas);
     }
-    fn train_for_set(&mut self, rate: f64, set: &Vec<TrainingPair>) {
-        for i in 0..set.len() {
-            self.train_for_pair(rate, &set[i]);
-        }
-    }
     fn create(inputs: i32, layer_sizes: &Vec<i32>, outputs: i32) -> Network {
         let mut layers: Vec<Layer> = Vec::with_capacity(2 + layer_sizes.len());
         layers.push(Layer::create(inputs, inputs));
@@ -155,22 +150,22 @@ struct TrainingPair {
     output: Vec<f64>,
 }
 fn main() {
-    let xor_set: Vec<TrainingPair> = vec![TrainingPair {
-                                              input: vec![1.0, 0.0],
-                                              output: vec![1.0],
-                                          },
-                                          TrainingPair {
-                                              input: vec![0.0, 1.0],
-                                              output: vec![1.0],
-                                          },
-                                          TrainingPair {
-                                              input: vec![0.0, 0.0],
-                                              output: vec![0.0],
-                                          },
-                                          TrainingPair {
-                                              input: vec![1.0, 1.0],
-                                              output: vec![0.0],
-                                          }];
+    let xor_set = [TrainingPair {
+                       input: vec![1.0, 0.0],
+                       output: vec![1.0],
+                   },
+                   TrainingPair {
+                       input: vec![0.0, 1.0],
+                       output: vec![1.0],
+                   },
+                   TrainingPair {
+                       input: vec![0.0, 0.0],
+                       output: vec![0.0],
+                   },
+                   TrainingPair {
+                       input: vec![1.0, 1.0],
+                       output: vec![0.0],
+                   }];
     let mut n = Network::create(2, &vec![2, 2], 1);
 
     println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
@@ -180,7 +175,9 @@ fn main() {
     println!("-------------------");
 
     for _ in 0..10000 {
-        n.train_for_set(0.1, &xor_set)
+        for i in 0..xor_set.len() {
+            n.train_for_pair(0.1, &xor_set[i]);
+        }
     }
 
     println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
