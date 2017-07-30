@@ -1,10 +1,10 @@
-#[derive(Debug)] 
+#[derive(Clone)]
 struct Synapse {
     weight: f64,
     value: f64,
 }
 //Neuron has input derivatives to effect prev layer and weight derivatives to change weights
-#[derive(Debug)] 
+#[derive(Clone)]
 struct Neuron {
     synapses: Vec<Synapse>,
     weight_derivatives: Vec<f64>,
@@ -60,7 +60,6 @@ impl Neuron {
     }
 }
 //Layer Only has one type of derivative to store (to back prop to prev layer) its of the inputs type
-#[derive(Debug)]
 struct Layer {
     neurons: Vec<Neuron>,
     derivatives: Vec<f64>,
@@ -105,7 +104,6 @@ impl Layer {
         }
     }
 }
-#[derive(Debug)]
 struct Network {
     layers: Vec<Layer>,
 }
@@ -174,7 +172,7 @@ fn main() {
                                               output: vec![0.0],
                                           }];
     let mut n = Network::create(2, &vec![2, 2], 1);
-    //println!("network: {:?}", n);
+
     println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
     println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
     println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
