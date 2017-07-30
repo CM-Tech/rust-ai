@@ -90,9 +90,8 @@ impl Layer {
         for i in 0..in_len {
             derivatives.push(0.0);
             for j in 0..self.neurons.len() {
-                derivatives[i]+=self.neurons[j].value_derivatives[i] /
-                                 (self.neurons.len() as f64) *
-                                 deltas[j];
+                derivatives[i] +=
+                    self.neurons[j].value_derivatives[i] / (self.neurons.len() as f64) * deltas[j];
             }
         }
         self.derivatives = derivatives;
@@ -179,15 +178,20 @@ fn main() {
                         output: vec![0.0],
                     }],
     };
-    let mut n = Network::create(2, &vec![2,2], 1);
+    let mut n = Network::create(2, &vec![2, 2], 1);
     //println!("network: {:?}", n);
-    for i in 0..10000 {
-        println!("-------------------");
-        println!("Iteration #{:?}", i);
-        println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
-        println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
-        println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
-        println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
-        n.train_for_set(0.1, &xor_set);
+    println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
+    println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
+    println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
+    println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
+    println!("-------------------");
+
+    for _ in 0..10000 {
+        n.train_for_set(0.1, &xor_set)
     }
+
+    println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
+    println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
+    println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
+    println!("eval 0.0,0.0: {:?}", n.ev(&vec![0.0, 0.0]));
 }
