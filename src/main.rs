@@ -181,9 +181,9 @@ fn main() {
     };
     let mut n = Network::create(2, &vec![2], 1);
     //println!("network: {:?}", n);
-    for i in 0..10 {
-        println!("-------------------");
-        println!("Iteration #{:?}", i);
+    for i in 0..10{
+        println!("iter # {:?}",i);
+        println!("network: {:?}", n);
         println!("eval 1.0,0.0: {:?}", n.ev(&vec![1.0, 0.0]));
         println!("eval 0.0,1.0: {:?}", n.ev(&vec![0.0, 1.0]));
         println!("eval 1.0,1.0: {:?}", n.ev(&vec![1.0, 1.0]));
