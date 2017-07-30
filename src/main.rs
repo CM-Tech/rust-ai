@@ -119,8 +119,8 @@ impl Network {
     fn backProp(&mut self, rate: f64, delta: f64) {
         
     }
-    fn create(inputs: i32, layerSizes: &Vec<i32>, outputs: i32) -> Network {
-        let mut layers: Vec<Layer> = Vec::with_capacity(2 + layerSizes.len());
+    fn create(inputs: i32, layer_sizes: &Vec<i32>, outputs: i32) -> Network {
+        let mut layers: Vec<Layer> = Vec::with_capacity(2 + layer_sizes.len());
         layers.push(Layer::create(inputs, inputs));
         if layer_sizes.len() > 0 {
             layers.push(Layer::create(inputs, layer_sizes[0]));
