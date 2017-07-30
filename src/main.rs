@@ -60,7 +60,6 @@ impl Neuron {
 //Layer Only has one type of derivative to store (to back prop to prev layer) its of the inputs type
 struct Layer {
     neurons: Vec<Neuron>,
-    derivatives: Vec<f64>,
 }
 impl Layer {
     fn update_inputs(&mut self, inputs: &Vec<f64>) {
@@ -74,29 +73,24 @@ impl Layer {
             .map(|ref iter| iter.activate())
             .collect()
     }
-    fn back_prop(&mut self, rate: f64, deltas: &Vec<f64>) {
+    fn back_prop(&mut self, rate: f64, deltas: &Vec<f64>) -> Vec<f64> {
         for (j, neuron) in self.neurons.iter_mut().enumerate() {
             neuron.calc_derivatives();
             neuron.back_prop(rate, deltas[j]);
         }
         let in_len: usize = self.neurons[0].synapses.len();
-        let mut derivatives: Vec<f64> = Vec::with_capacity(in_len);
+        let mut derivatives = vec![0.0; in_len];
         for i in 0..in_len {
-            derivatives.push(0.0);
             for j in 0..self.neurons.len() {
                 derivatives[i] +=
                     self.neurons[j].value_derivatives[i] / (self.neurons.len() as f64) * deltas[j];
             }
         }
-        self.derivatives = derivatives;
+        derivatives
     }
     fn create(inputs: i32, outputs: i32) -> Layer {
         let neurons: Vec<Neuron> = vec![Neuron::create(inputs); outputs as usize];
-        let derivatives: Vec<f64> = vec![1.0; inputs as usize];
-        Layer {
-            neurons: neurons,
-            derivatives: derivatives,
-        }
+        Layer { neurons: neurons }
     }
 }
 struct Network {
@@ -115,10 +109,8 @@ impl Network {
         self.layers
             .iter_mut()
             .rev()
-            .fold(deltas.clone(), |delta_grad, ref mut layer| {
-                layer.back_prop(rate, &delta_grad);
-                layer.derivatives.clone()
-            });
+            .fold(deltas.clone(),
+                  |delta_grad, ref mut layer| layer.back_prop(rate, &delta_grad));
     }
     fn train_for_pair(&mut self, rate: f64, pair: &TrainingPair) {
         let mut deltas: Vec<f64> = self.ev(&pair.input);
