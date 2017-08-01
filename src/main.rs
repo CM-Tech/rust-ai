@@ -1,138 +1,159 @@
 extern crate rand;
 use rand::Rng;
+use std::mem;
 
 fn random() -> f64 {
     rand::random::<f64>()
 }
 #[derive(Clone)]
 struct Layer {
-    inputMap: Vec<i32>,
-    invert:Vec<bool>
+    input_map: Vec<usize>,
+    invert: Vec<bool>,
 }
 impl Layer {
-    fn create (size:i32) -> Layer {
-        let mut inputMap:Vec<i32>=Vec::with_capacity((size*3) as usize);
-        let mut invert:Vec<bool>=Vec::with_capacity(size as usize);
-        for i in 0..(size*3){
-            inputMap.push(i);
+    fn create(size: i32) -> Layer {
+        let mut input_map: Vec<usize> = Vec::with_capacity((size * 3) as usize);
+        let mut invert: Vec<bool> = Vec::with_capacity(size as usize);
+        for i in 0..(size * 3) {
+            input_map.push(i as usize);
         }
-        for i in 0..size{
+        for i in 0..size {
             invert.push(false);
         }
-        Layer { inputMap:inputMap,invert:invert }
-    }
-    fn random_switch (&mut self){
-        if random()<0.25{
-            let i=(random()*(self.invert.len() as f64)).floor() as i32;
-            self.invert[i as usize]=!self.invert[i as usize];
-        }else{
-            let i=(random()*(self.inputMap.len() as f64)).floor() as i32;
-            let j=((random()*((self.inputMap.len()-1) as f64)).floor() as i32+i+1)%(self.inputMap.len() as i32);
-            let a=self.inputMap[i as usize]+0;
-            self.inputMap[i as usize]=self.inputMap[j as usize]+0;
-            self.inputMap[j as usize]=a;
+        Layer {
+            input_map: input_map,
+            invert: invert,
         }
     }
-    fn eval (&mut self,input:&Vec<bool>)->Vec<bool>{
-        let mut output:Vec<bool>=Vec::with_capacity(self.inputMap.len());
-        for i in 0..self.invert.len(){
-            let mut j=i*3;
-            let mut a=false;
-            let mut b=false;
-            let mut c=false;
-            if self.inputMap[j]<(input.len() as i32) {
-                a=input[self.inputMap[j] as usize];
+    fn random_switch(&mut self) {
+        if random() < 0.25 {
+            let i = (random() * (self.invert.len() as f64)).floor() as i32;
+            self.invert[i as usize] = !self.invert[i as usize];
+        } else {
+            let i = (random() * (self.input_map.len() as f64)).floor() as i32;
+            let j = ((random() * ((self.input_map.len() - 1) as f64)).floor() as i32 + i + 1) %
+                    (self.input_map.len() as i32);
+            let a = self.input_map[i as usize] + 0;
+            // mem::swap(&mut self.input_map[i as usize], self.input_map[j as usize]);
+            self.input_map[i as usize] = self.input_map[j as usize] + 0;
+            self.input_map[j as usize] = a;
+        }
+    }
+    fn eval(&self, input: &Vec<bool>) -> Vec<bool> {
+        let mapped_ins: Vec<bool> = self.input_map.clone().into_iter().map(|x| input[x]).collect();
+        let mut output: Vec<bool> = Vec::with_capacity(self.input_map.len());
+
+        //input[self.input_map];
+        for i in 0..self.invert.len() {
+            let j = i * 3;
+            if mapped_ins[j + 2] {
+                output.push(mapped_ins[j + 1] ^ self.invert[i]);
+                output.push(mapped_ins[j] ^ self.invert[i]);
+                output.push(mapped_ins[j + 2] ^ self.invert[i]);
+            } else {
+                output.push(mapped_ins[j] ^ self.invert[i]);
+                output.push(mapped_ins[j + 1] ^ self.invert[i]);
+                output.push(mapped_ins[j + 2] ^ self.invert[i]);
             }
-            if self.inputMap[j+1]<(input.len() as i32) {
-                b=input[self.inputMap[j+1] as usize];
-            }
-            if self.inputMap[j+2]<(input.len() as i32) {
-                c=input[self.inputMap[j+2] as usize];
-            }
-            if c {
-                output.push(b^self.invert[i]);
-                output.push(a^self.invert[i]);
-                output.push(c^self.invert[i]);
-            }else{
-                output.push(a^self.invert[i]);
-                output.push(b^self.invert[i]);
-                output.push(c^self.invert[i]);
-            }
-            
+
         }
         output
     }
-    fn clone(&mut self)-> Layer{
-        Layer{inputMap:self.inputMap.clone(),invert:self.invert.clone()}
+    fn clone(&mut self) -> Layer {
+        Layer {
+            input_map: self.input_map.clone(),
+            invert: self.invert.clone(),
+        }
     }
 }
 struct Network {
     layers: Vec<Layer>,
+    error_store: f64,
+    width: usize,
 }
 impl Network {
     fn eval(&mut self, inputs: &Vec<bool>) -> Vec<bool> {
-        let mut output:Vec<bool>=inputs.clone();
-        for i in 0..self.layers.len(){
-            output=self.layers[i].eval(&output);
+        let mut output: Vec<bool> = inputs.clone();
+        while output.len() < self.width * 3 {
+            output.push(false);
+        }
+        for i in 0..self.layers.len() {
+            output = self.layers[i].eval(&output);
         }
         return output;
     }
-    fn create(width:i32,depth:i32) -> Network {
+    fn create(width: i32, depth: i32) -> Network {
         let mut layers = Vec::with_capacity(depth as usize);
-        for i in 1..depth {
+        for i in 0..depth {
             layers.push(Layer::create(width));
-        }
-        Network { layers: layers }
-    }
-    fn error(&mut self,input: &Vec<bool>,expected:&Vec<bool>)->f64{
-        let mut tot=0.0;
-        let output:Vec<bool>=self.eval(input);
-        for i in 0..expected.len(){
-            if expected[i]!=output[i]{
-                tot+=1.0;
+            for j in 0..width {
+                layers[i as usize].random_switch();
             }
         }
-        if expected.len()<1{
+        Network {
+            layers: layers,
+            error_store: 1.0,
+            width: width as usize,
+        }
+    }
+    fn error(&mut self, input: &Vec<bool>, expected: &Vec<bool>) -> f64 {
+        let mut tot = 0.0;
+        let output: Vec<bool> = self.eval(input);
+        for i in 0..expected.len() {
+            if expected[i] != output[i] {
+                tot += 1.0;
+            }
+        }
+        if expected.len() < 1 {
             return 0.0;
         }
-        tot/(expected.len() as f64)
+        tot / (expected.len() as f64)
     }
-    fn set_error(&mut self,set: &Vec<TrainingPair>)->f64{
-        let mut tot=0.0;
-        
-        for i in 0..set.len(){
-            tot+=self.error(&set[i].input,&set[i].output);
+    fn set_error(&mut self, set: &Vec<TrainingPair>) -> f64 {
+        let mut tot: f64 = 0.0;
+
+        for i in 0..set.len() {
+            tot += self.error(&set[i].input, &set[i].output);
         }
-        if set.len()<1{
+        if set.len() < 1 {
             return 0.0;
         }
-        tot/(set.len() as f64)
+        self.error_store = tot / (set.len() as f64);
+        self.error_store
     }
-    fn clone(&mut self)-> Network{
-        Network{layers:self.layers.clone()}
+    fn clone(&mut self) -> Network {
+        Network {
+            layers: self.layers.clone(),
+            error_store: self.error_store + 0.0,
+            width: self.width,
+        }
     }
-    fn random_switch (&mut self,switches:i32){
-        for j in 0..switches{
-            let i=(random()*(self.layers.len() as f64)).floor() as usize;
+    fn random_switch(&mut self, switches: i32) {
+        for j in 0..switches {
+            let i = (random() * (self.layers.len() as f64)).floor() as usize;
             self.layers[i].random_switch();
         }
     }
-    fn train_for_pair(&mut self,pair:&TrainingPair,switches:i32){
-        let mut n=self.clone();
+    fn train_for_pair(&mut self, pair: &TrainingPair, switches: i32, error_bar: f64) {
+        let mut n = self.clone();
         n.random_switch(switches);
-        let error1=self.error(&pair.input,&pair.output);
-        let error2=n.error(&pair.input,&pair.output);
-        if(error2<=error1){
-            self.layers=n.layers;
+        let error1 = self.error(&pair.input, &pair.output);
+        let error2 = n.error(&pair.input, &pair.output);
+        if (error2 < error1 * error_bar) {
+            self.layers = n.layers;
         }
     }
-    fn train_for_set(&mut self,set: &Vec<TrainingPair>,switches:i32){
-        let mut n=self.clone();
+    fn train_for_set(&mut self, set: &Vec<TrainingPair>, switches: i32, error_bar: f64) {
+        let mut n = self.clone();
         n.random_switch(switches);
-        let error1=self.set_error(&set);
-        let error2=n.set_error(&set);
-        if(error2<=error1){
-            self.layers=n.layers;
+
+        let error2 = n.set_error(&set);
+        if error2 < self.error_store * error_bar {
+            let error1 = self.set_error(&set);
+            if error2 < error1 * error_bar {
+                self.layers = n.layers;
+                self.error_store = n.error_store;
+            }
         }
     }
 }
@@ -148,39 +169,82 @@ fn test_xor(network: &mut Network) {
     println!("eval 0.0,0.0: {:?}", network.eval(&vec![false, false]));
     println!("error: {:?}", network.eval(&vec![false, false]));
 }
-fn test_error(network: &mut Network,set: &Vec<TrainingPair>) {
+fn test_error(network: &mut Network, set: &Vec<TrainingPair>) {
     println!("-------------------");
     println!("error: {:?}", network.set_error(set));
 }
 fn main() {
     let xor_set = vec![TrainingPair {
-                       input: vec![true, false],
-                       output: vec![true],
-                   },
-                   TrainingPair {
-                       input: vec![false, true],
-                       output: vec![true],
-                   },
-                   TrainingPair {
-                       input: vec![false, false],
-                       output: vec![false],
-                   },
-                   TrainingPair {
-                       input: vec![true, true],
-                       output: vec![false],
-                   }];
-    let mut n = Network::create(2, 10);
+                           input: vec![true, false],
+                           output: vec![true],
+                       },
+                       TrainingPair {
+                           input: vec![false, true],
+                           output: vec![true],
+                       },
+                       TrainingPair {
+                           input: vec![false, false],
+                           output: vec![false],
+                       },
+                       TrainingPair {
+                           input: vec![true, true],
+                           output: vec![false],
+                       }];
+    let mut n = Network::create(32, 35);
+    let mut add_set = vec![];
+    for i in 0..50 {
+        let j = 1 + (random() * (10000 as f64)).floor() as i32;
+        let bit_len = 32;
+        let bin = format!("{:b}", j);
+        let bin2 = format!("{:b}", j + 1);
+        let mut input: Vec<bool> = vec![];
+        let mut output: Vec<bool> = vec![];
+        for c in bin.chars().rev() {
+            input.push(c == '1');
+        }
+        while input.len() < bit_len {
+            input.push(false);
+        }
+        for c in bin2.chars().rev() {
+            output.push(c == '1');
+        }
+        while output.len() < bit_len {
+            output.push(false);
+        }
+        add_set.push(TrainingPair {
+            input: input,
+            output: output,
+        });
+    }
 
-    test_xor(&mut n);
-    for i in 0..10000 {
+
+    //test_xor(&mut n);
+    let mut last_error: f64 = 1.0;
+    for i in 0.. {
         /*for xor_pair in &xor_set {
             n.train_for_pair(&xor_pair,10);
         }*/
-        n.train_for_set(&xor_set,10);
-        println!("iter: {:?}",i);
-        test_error(&mut n,&xor_set);
-        if n.set_error(&xor_set)<0.1{
-            break;
+        //n.train_for_pair(&add_set[((random()*(add_set.len() as f64)).floor() as usize)],10,1.08);
+        if i % 50 == 0 {
+            n.train_for_set(&xor_set,
+                            1 + ((random() * (20 as f64)).floor() as i32),
+                            1.005);
+        } else {
+            n.train_for_set(&xor_set,
+                            1 + ((random() * (2 as f64)).floor() as i32),
+                            1.001);
+        }
+
+        let new_error = n.error_store; //set_error(&add_set);
+        if new_error != last_error {
+            last_error = new_error;
+            println!("iter: {:?}", i);
+            println!("-------------------");
+            println!("error: {:?}", last_error);
+            //test_error(&mut n,&add_set);
+            if n.set_error(&xor_set) == 0.0 {
+                break;
+            }
         }
     }
 }
