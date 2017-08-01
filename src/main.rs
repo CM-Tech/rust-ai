@@ -326,14 +326,14 @@ impl Network {
             }
         }
     }
-    fn smart_train_for_set(&mut self, set: &Vec<TrainingPair>, switches: i32, error_bar: f64) {
+    fn smart_train_for_set(&mut self, set: &Vec<TrainingPair>, switches: i32,inverts:i32, error_bar: f64) {
         let mut n = self.clone();
         //n.random_switch(switches);
         /*for i in 0..set.len() {
             //n.smart_invert(&set[i],1);
         n.smart_switch(&set[i],switches);
         }*/
-        n.smart_invert(&set[(random()*(set.len() as f64)) as usize],switches);
+        n.smart_invert(&set[(random()*(set.len() as f64)) as usize],inverts);
         //n.smart_switch(&set[(random()*(set.len() as f64)) as usize],switches);
         n.smart_switch_set(&set,switches,error_bar);
 
@@ -402,7 +402,7 @@ fn main() {
             n.train_for_set(&test_set, 1 + ((random() * (20.0)).floor() as i32), 1.001);
             //n.smart_train_for_set(&test_set, 1 + ((random() * (30.0)).floor() as i32), 1.01);
         } else {
-            n.smart_train_for_set(&test_set, 100 + ((random() * (30.0)).floor() as i32), 1.01);
+            n.smart_train_for_set(&test_set, 100 + ((random() * (30.0)).floor() as i32),((random() * (30.0)).floor() as i32), 1.01);
         }
 
         let new_error = n.error_store;
