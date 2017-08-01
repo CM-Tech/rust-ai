@@ -7,13 +7,17 @@ fn random() -> f64 {
 struct Layer {
     input_map: Vec<usize>,
     invert: Vec<bool>,
+    inputs:Vec<bool>,
+    outputs:Vec<bool>,
 }
 impl Layer {
     fn create(size: i32) -> Layer {
         let mut input_map: Vec<usize> = Vec::with_capacity((size * 3) as usize);
         let mut invert: Vec<bool> = Vec::with_capacity(size as usize);
+        let mut io: Vec<bool> = Vec::with_capacity((size*3) as usize);
         for i in 0..(size * 3) {
             input_map.push(i as usize);
+            io.push(false);
         }
         for _ in 0..size {
             invert.push(false);
@@ -21,6 +25,8 @@ impl Layer {
         Layer {
             input_map: input_map,
             invert: invert,
+            inputs:io.clone(),
+            outputs:io.clone()
         }
     }
     fn random_switch(&mut self) {
@@ -37,7 +43,8 @@ impl Layer {
             self.input_map[j as usize] = a;
         }
     }
-    fn eval(&self, input: &Vec<bool>) -> Vec<bool> {
+    fn eval(&mut self, input: &Vec<bool>) -> Vec<bool> {
+        self.inputs=input.clone();
         let mapped_ins: Vec<bool> = self.input_map
             .clone()
             .into_iter()
@@ -58,17 +65,18 @@ impl Layer {
             }
 
         }
+        self.outputs=output.clone();
         output
     }
-    fn reverse(&self, output: &Vec<bool>) -> Vec<bool> {
+    fn reverse(&mut self, output: &Vec<bool>) -> Vec<bool> {
         let mut input: Vec<bool> = Vec::with_capacity(self.input_map.len());
-
+        self.outputs=output.clone();
         for i in 0..self.invert.len() {
             let j = i * 3;
             if output[j + 2]^ self.invert[i] {
                 input.push(output[j + 1] ^ self.invert[i]);
                 input.push(output[j] ^ self.invert[i]);
-                output.push(output[j + 2] ^ self.invert[i]);
+                input.push(output[j + 2] ^ self.invert[i]);
             } else {
                 input.push(output[j] ^ self.invert[i]);
                 input.push(output[j + 1] ^ self.invert[i]);
@@ -81,6 +89,7 @@ impl Layer {
             .into_iter()
             .map(|x| input[x])
             .collect();
+        self.inputs=mapped_ins.clone();
         mapped_ins
     }
 }
