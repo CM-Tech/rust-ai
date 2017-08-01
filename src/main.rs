@@ -219,13 +219,14 @@ fn main() {
     }
 
     let mut last_error: f64 = 1.0;
+    let mut training_set=xor_set;
     for i in 0.. {
         if i % 50 == 0 {
-            n.train_for_set(&xor_set,
+            n.train_for_set(&training_set,
                             1 + ((random() * (20.0)).floor() as i32),
                             1.005);
         } else {
-            n.train_for_set(&xor_set,
+            n.train_for_set(&training_set,
                             1 + ((random() * (2.0)).floor() as i32),
                             1.001);
         }
@@ -236,7 +237,7 @@ fn main() {
             println!("iter: {:?}", i);
             println!("-------------------");
             println!("error: {:?}", last_error);
-            if n.set_error(&xor_set) == 0.0 {
+            if n.set_error(&training_set) == 0.0 {
                 break;
             }
         }
