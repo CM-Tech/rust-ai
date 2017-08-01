@@ -43,8 +43,8 @@ impl Layer {
             self.input_map[j as usize] = a;
         }
     }
-    fn controlled_switch(&mut self,i:usize,j:usize) {
-        let a = self.input_map[i ] + 0;
+    fn controlled_switch(&mut self, i: usize, j: usize) {
+        let a = self.input_map[i] + 0;
         self.input_map[i] = self.input_map[j] + 0;
         self.input_map[j] = a;
     }
@@ -170,8 +170,8 @@ impl Network {
             self.layers[i].random_switch();
         }
     }
-    fn smart_invert(&mut self, pair:&TrainingPair,max_inverts:i32) {
-        let l = (random() * (self.layers.len() as f64-1.0)).floor() as usize+1;
+    fn smart_invert(&mut self, pair: &TrainingPair, max_inverts: i32) {
+        let l = (random() * (self.layers.len() as f64 - 1.0)).floor() as usize + 1;
         let mut output: Vec<bool> = pair.input.clone();
         while output.len() < self.width * 3 {
             output.push(false);
@@ -186,20 +186,21 @@ impl Network {
         for i in (l..self.layers.len()).rev() {
             input = self.layers[i].reverse(&input);
         }
-        let mut inverts=0;
-        for i in 0..self.width{
-            if inverts>max_inverts{
+        let mut inverts = 0;
+        for i in 0..self.width {
+            if inverts > max_inverts {
                 break;
             }
-            if input[i*3]!=output[i*3] &&input[i*3+1]!=output[i*3+1] &&input[i*3+2]!=output[i*3+2]{
-                self.layers[l].invert[i as usize]=!self.layers[l].invert[i as usize];
-                inverts+=1;
+            if input[i * 3] != output[i * 3] && input[i * 3 + 1] != output[i * 3 + 1] &&
+               input[i * 3 + 2] != output[i * 3 + 2] {
+                self.layers[l].invert[i as usize] = !self.layers[l].invert[i as usize];
+                inverts += 1;
             }
         }
         //println!("Inverts {:?}",inverts);
     }
-    fn smart_switch(&mut self, pair:&TrainingPair, maxSwitches: i32) {
-        let l = (random() * (self.layers.len() as f64-1.0)).floor() as usize;
+    fn smart_switch(&mut self, pair: &TrainingPair, maxSwitches: i32) {
+        let l = (random() * (self.layers.len() as f64 - 1.0)).floor() as usize;
         let mut output: Vec<bool> = pair.input.clone();
         while output.len() < self.width * 3 {
             output.push(false);
@@ -214,93 +215,91 @@ impl Network {
         for i in (l..self.layers.len()).rev() {
             input = self.layers[i].reverse(&input);
         }
-        let mut needFalse:Vec<usize>=vec![];
-        let mut needTrue:Vec<usize>=vec![];
-        for i in 0..self.width*3{
-            if input[i]!=output[i] {
-                let nF=needFalse.len() ;
-                let nT=needTrue.len();
-                if input[i]==false{
-                    needFalse.insert((random() * ((nF+ 1) as f64)).floor() as usize,i);
-                }else{
-                    needTrue.insert((random() * ((nT + 1) as f64)).floor() as usize,i);
+        let mut needFalse: Vec<usize> = vec![];
+        let mut needTrue: Vec<usize> = vec![];
+        for i in 0..self.width * 3 {
+            if input[i] != output[i] {
+                let nF = needFalse.len();
+                let nT = needTrue.len();
+                if input[i] == false {
+                    needFalse.insert((random() * ((nF + 1) as f64)).floor() as usize, i);
+                } else {
+                    needTrue.insert((random() * ((nT + 1) as f64)).floor() as usize, i);
                 }
-                
+
             }
         }
-        for i in 0..(maxSwitches as usize){
-            if i>=needTrue.len(){
+        for i in 0..(maxSwitches as usize) {
+            if i >= needTrue.len() {
                 break;
             }
-            if i>=needFalse.len(){
+            if i >= needFalse.len() {
                 break;
             }
-            self.layers[l].controlled_switch(needFalse[i],needTrue[i]);
+            self.layers[l].controlled_switch(needFalse[i], needTrue[i]);
 
         }
     }
     fn smart_switch_set(&mut self, set: &Vec<TrainingPair>, maxSwitches: i32, error_bar: f64) {
-        let mut needFalse:Vec<usize>=vec![];
-        let mut needTrue:Vec<usize>=vec![];
-        let mut needFalseLookUp:Vec<usize>=vec![];
-        let mut needTrueLookUp:Vec<usize>=vec![];
+        let mut needFalse: Vec<usize> = vec![];
+        let mut needTrue: Vec<usize> = vec![];
+        let mut needFalseLookUp: Vec<usize> = vec![];
+        let mut needTrueLookUp: Vec<usize> = vec![];
         for i in 0..(self.width * 3) {
             needFalseLookUp.push(0);
             needTrueLookUp.push(0);
         }
-        let l = (random() * (self.layers.len() as f64-1.0)).floor() as usize;
-        for pair in set{
-        
-        let mut output: Vec<bool> = pair.input.clone();
-        while output.len() < self.width * 3 {
-            output.push(false);
-        }
-        for i in 0..l {
-            output = self.layers[i].eval(&output);
-        }
-        let mut input: Vec<bool> = pair.output.clone();
-        while input.len() < self.width * 3 {
-            input.push(false);
-        }
-        for i in (l..self.layers.len()).rev() {
-            input = self.layers[i].reverse(&input);
-        }
-        for i in 0..self.width*3{
-            if input[i]!=output[i] {
-                if input[i]==false{
-                    needFalseLookUp[i]+=1;//.insert((random() * ((nF+ 1) as f64)).floor() as usize,i);
-                }else{
-                    needTrueLookUp[i]+=1;//.insert((random() * ((nT + 1) as f64)).floor() as usize,i);
+        let l = (random() * (self.layers.len() as f64 - 1.0)).floor() as usize;
+        for pair in set {
+
+            let mut output: Vec<bool> = pair.input.clone();
+            while output.len() < self.width * 3 {
+                output.push(false);
+            }
+            for i in 0..l {
+                output = self.layers[i].eval(&output);
+            }
+            let mut input: Vec<bool> = pair.output.clone();
+            while input.len() < self.width * 3 {
+                input.push(false);
+            }
+            for i in (l..self.layers.len()).rev() {
+                input = self.layers[i].reverse(&input);
+            }
+            for i in 0..self.width * 3 {
+                if input[i] != output[i] {
+                    if input[i] == false {
+                        needFalseLookUp[i] += 1;
+                    } else {
+                        needTrueLookUp[i] += 1;
+                    }
+
                 }
-                
             }
         }
-        }
-        for i in 0..self.width*3{
-            if ((needFalseLookUp[i]*2) as f64)*error_bar>=set.len() as f64 {
-                let nF=needFalse.len() ;
-                let nT=needTrue.len();
-                
-                    needFalse.insert((random() * ((nF+ 1) as f64)).floor() as usize,i);
-                
-                
-            }else if ((needTrueLookUp[i]*2) as f64)*error_bar>=set.len() as f64 {
-                let nF=needFalse.len() ;
-                let nT=needTrue.len();
-                
-                    needTrue.insert((random() * ((nT+ 1) as f64)).floor() as usize,i);
-                
-                
+        for i in 0..self.width * 3 {
+            if ((needFalseLookUp[i] * 2) as f64) * error_bar >= set.len() as f64 {
+                let n_f = needFalse.len();
+
+                needFalse.insert((random() * ((n_f + 1) as f64)).floor() as usize, i);
+
+
+            } else if ((needTrueLookUp[i] * 2) as f64) * error_bar >= set.len() as f64 {
+                let n_t = needTrue.len();
+
+                needTrue.insert((random() * ((n_t + 1) as f64)).floor() as usize, i);
+
+
             }
         }
-        for i in 0..(maxSwitches as usize){
-            if i>=needTrue.len(){
+        for i in 0..(maxSwitches as usize) {
+            if i >= needTrue.len() {
                 break;
             }
-            if i>=needFalse.len(){
+            if i >= needFalse.len() {
                 break;
             }
-            self.layers[l].controlled_switch(needFalse[i],needTrue[i]);
+            self.layers[l].controlled_switch(needFalse[i], needTrue[i]);
 
         }
     }
@@ -326,16 +325,20 @@ impl Network {
             }
         }
     }
-    fn smart_train_for_set(&mut self, set: &Vec<TrainingPair>, switches: i32,inverts:i32, error_bar: f64) {
+    fn smart_train_for_set(&mut self,
+                           set: &Vec<TrainingPair>,
+                           switches: i32,
+                           inverts: i32,
+                           error_bar: f64) {
         let mut n = self.clone();
         //n.random_switch(switches);
         /*for i in 0..set.len() {
             //n.smart_invert(&set[i],1);
         n.smart_switch(&set[i],switches);
         }*/
-        n.smart_invert(&set[(random()*(set.len() as f64)) as usize],inverts);
+        n.smart_invert(&set[(random() * (set.len() as f64)) as usize], inverts);
         //n.smart_switch(&set[(random()*(set.len() as f64)) as usize],switches);
-        n.smart_switch_set(&set,switches,error_bar);
+        n.smart_switch_set(&set, switches, error_bar);
 
         let error2 = n.error_set(&set);
         if error2 < self.error_store * error_bar {
@@ -396,13 +399,16 @@ fn main() {
     }
 
     let mut last_error: f64 = 1.0;
-    let mut test_set=add_set;
+    let mut test_set = add_set;
     for i in 0.. {
-        if i % 50 ==0 {
+        if i % 50 == 0 {
             n.train_for_set(&test_set, 1 + ((random() * (20.0)).floor() as i32), 1.001);
             //n.smart_train_for_set(&test_set, 1 + ((random() * (30.0)).floor() as i32), 1.01);
         } else {
-            n.smart_train_for_set(&test_set, 100 + ((random() * (30.0)).floor() as i32),((random() * (30.0)).floor() as i32), 1.01);
+            n.smart_train_for_set(&test_set,
+                                  100 + ((random() * (30.0)).floor() as i32),
+                                  ((random() * (30.0)).floor() as i32),
+                                  1.001);
         }
 
         let new_error = n.error_store;
