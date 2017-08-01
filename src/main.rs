@@ -302,11 +302,11 @@ fn main() {
                            input: vec![true, true],
                            output: vec![false],
                        }];
-    let mut n = Network::create(32, 35);
+    let mut n = Network::create(16, 20);
     let mut add_set = vec![];
-    for _ in 0..100 {
-        let j = 1 + (random() * (10000 as f64)).floor() as i32;
-        let bit_len = 32;
+    for i in 0..100 {
+        let j = 0 + (random() * ((2.0 as f64).powf(15.0) as f64)).floor() as i32;
+        let bit_len = 16;
         let bin = format!("{:b}", j);
         let bin2 = format!("{:b}", j + 1);
         let mut input: Vec<bool> = vec![];
@@ -332,10 +332,10 @@ fn main() {
     let mut last_error: f64 = 1.0;
     let mut test_set=add_set;
     for i in 0.. {
-        if i % 10 == 0 {
+        if i % 20 == 0 {
             n.train_for_set(&test_set, 1 + ((random() * (20.0)).floor() as i32), 1.005);
         } else {
-            n.smart_train_for_set(&test_set, 10 + ((random() * (2.0)).floor() as i32), 1.001);
+            n.smart_train_for_set(&test_set, 10 + ((random() * (2.0)).floor() as i32), 1.005);
         }
 
         let new_error = n.error_store;
