@@ -1,6 +1,4 @@
 extern crate rand;
-use rand::Rng;
-use std::mem;
 
 fn random() -> f64 {
     rand::random::<f64>()
@@ -34,16 +32,19 @@ impl Layer {
             let j = ((random() * ((self.input_map.len() - 1) as f64)).floor() as i32 + i + 1) %
                     (self.input_map.len() as i32);
             let a = self.input_map[i as usize] + 0;
-            // mem::swap(&mut self.input_map[i as usize], self.input_map[j as usize]);
+
             self.input_map[i as usize] = self.input_map[j as usize] + 0;
             self.input_map[j as usize] = a;
         }
     }
     fn eval(&self, input: &Vec<bool>) -> Vec<bool> {
-        let mapped_ins: Vec<bool> = self.input_map.clone().into_iter().map(|x| input[x]).collect();
+        let mapped_ins: Vec<bool> = self.input_map
+            .clone()
+            .into_iter()
+            .map(|x| input[x])
+            .collect();
         let mut output: Vec<bool> = Vec::with_capacity(self.input_map.len());
 
-        //input[self.input_map];
         for i in 0..self.invert.len() {
             let j = i * 3;
             if mapped_ins[j + 2] {
@@ -212,38 +213,30 @@ fn main() {
             output.push(false);
         }
         add_set.push(TrainingPair {
-            input: input,
-            output: output,
-        });
+                         input: input,
+                         output: output,
+                     });
     }
 
-
-    //test_xor(&mut n);
     let mut last_error: f64 = 1.0;
-    let mut set=add_set;
     for i in 0.. {
-        /*for xor_pair in &xor_set {
-            n.train_for_pair(&xor_pair,10);
-        }*/
-        //n.train_for_pair(&add_set[((random()*(add_set.len() as f64)).floor() as usize)],10,1.08);
         if i % 50 == 0 {
-            n.train_for_set(&set,
-                            1 + ((random() * (20 as f64)).floor() as i32),
+            n.train_for_set(&xor_set,
+                            1 + ((random() * (20.0)).floor() as i32),
                             1.005);
         } else {
-            n.train_for_set(&set,
-                            1 + ((random() * (10 as f64)).floor() as i32),
+            n.train_for_set(&xor_set,
+                            1 + ((random() * (2.0)).floor() as i32),
                             1.001);
         }
 
-        let new_error = n.error_store; //set_error(&add_set);
+        let new_error = n.error_store;
         if new_error != last_error {
             last_error = new_error;
             println!("iter: {:?}", i);
             println!("-------------------");
             println!("error: {:?}", last_error);
-            //test_error(&mut n,&add_set);
-            if n.set_error(&set) == 0.0 {
+            if n.set_error(&xor_set) == 0.0 {
                 break;
             }
         }
