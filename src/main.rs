@@ -239,6 +239,71 @@ impl Network {
 
         }
     }
+    fn smart_switch_set(&mut self, set: &Vec<TrainingPair>, maxSwitches: i32, error_bar: f64) {
+        let mut needFalse:Vec<usize>=vec![];
+        let mut needTrue:Vec<usize>=vec![];
+        let mut needFalseLookUp:Vec<usize>=vec![];
+        let mut needTrueLookUp:Vec<usize>=vec![];
+        for i in 0..(self.width * 3) {
+            needFalseLookUp.push(0);
+            needTrueLookUp.push(0);
+        }
+        let l = (random() * (self.layers.len() as f64-1.0)).floor() as usize;
+        for pair in set{
+        
+        let mut output: Vec<bool> = pair.input.clone();
+        while output.len() < self.width * 3 {
+            output.push(false);
+        }
+        for i in 0..l {
+            output = self.layers[i].eval(&output);
+        }
+        let mut input: Vec<bool> = pair.output.clone();
+        while input.len() < self.width * 3 {
+            input.push(false);
+        }
+        for i in (l..self.layers.len()).rev() {
+            input = self.layers[i].reverse(&input);
+        }
+        for i in 0..self.width*3{
+            if input[i]!=output[i] {
+                if input[i]==false{
+                    needFalseLookUp[i]+=1;//.insert((random() * ((nF+ 1) as f64)).floor() as usize,i);
+                }else{
+                    needTrueLookUp[i]+=1;//.insert((random() * ((nT + 1) as f64)).floor() as usize,i);
+                }
+                
+            }
+        }
+        }
+        for i in 0..self.width*3{
+            if ((needFalseLookUp[i]*2) as f64)*error_bar>=set.len() as f64 {
+                let nF=needFalse.len() ;
+                let nT=needTrue.len();
+                
+                    needFalse.insert((random() * ((nF+ 1) as f64)).floor() as usize,i);
+                
+                
+            }else if ((needTrueLookUp[i]*2) as f64)*error_bar>=set.len() as f64 {
+                let nF=needFalse.len() ;
+                let nT=needTrue.len();
+                
+                    needTrue.insert((random() * ((nT+ 1) as f64)).floor() as usize,i);
+                
+                
+            }
+        }
+        for i in 0..(maxSwitches as usize){
+            if i>=needTrue.len(){
+                break;
+            }
+            if i>=needFalse.len(){
+                break;
+            }
+            self.layers[l].controlled_switch(needFalse[i],needTrue[i]);
+
+        }
+    }
     fn train_for_pair(&mut self, pair: &TrainingPair, switches: i32, error_bar: f64) {
         let mut n = self.clone();
         n.random_switch(switches);
@@ -269,7 +334,8 @@ impl Network {
         n.smart_switch(&set[i],switches);
         }*/
         n.smart_invert(&set[(random()*(set.len() as f64)) as usize],switches);
-        n.smart_switch(&set[(random()*(set.len() as f64)) as usize],switches);
+        //n.smart_switch(&set[(random()*(set.len() as f64)) as usize],switches);
+        n.smart_switch_set(&set,switches,error_bar);
 
         let error2 = n.error_set(&set);
         if error2 < self.error_store * error_bar {
@@ -302,7 +368,7 @@ fn main() {
                            input: vec![true, true],
                            output: vec![false],
                        }];
-    let mut n = Network::create(16, 20);
+    let mut n = Network::create(16, 18);
     let mut add_set = vec![];
     for i in 0..100 {
         let j = 0 + (random() * ((2.0 as f64).powf(15.0) as f64)).floor() as i32;
@@ -332,10 +398,11 @@ fn main() {
     let mut last_error: f64 = 1.0;
     let mut test_set=add_set;
     for i in 0.. {
-        if i % 20 == 0 {
-            n.train_for_set(&test_set, 1 + ((random() * (20.0)).floor() as i32), 1.005);
+        if i % 50 ==0 {
+            n.train_for_set(&test_set, 1 + ((random() * (20.0)).floor() as i32), 1.001);
+            //n.smart_train_for_set(&test_set, 1 + ((random() * (30.0)).floor() as i32), 1.01);
         } else {
-            n.smart_train_for_set(&test_set, 10 + ((random() * (2.0)).floor() as i32), 1.005);
+            n.smart_train_for_set(&test_set, 100 + ((random() * (30.0)).floor() as i32), 1.01);
         }
 
         let new_error = n.error_store;
