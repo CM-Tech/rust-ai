@@ -61,6 +61,7 @@ impl Layer {
         output
     }
 }
+#[derive(Clone)]
 struct Network {
     layers: Vec<Layer>,
     error_store: f64,
@@ -115,13 +116,6 @@ impl Network {
         }
         self.error_store = tot / (set.len() as f64);
         self.error_store
-    }
-    fn clone(&mut self) -> Network {
-        Network {
-            layers: self.layers.clone(),
-            error_store: self.error_store + 0.0,
-            width: self.width,
-        }
     }
     fn random_switch(&mut self, switches: i32) {
         for _ in 0..switches {
@@ -203,13 +197,9 @@ fn main() {
     let mut last_error: f64 = 1.0;
     for i in 0.. {
         if i % 50 == 0 {
-            n.train_for_set(&xor_set,
-                            1 + ((random() * (20.0)).floor() as i32),
-                            1.005);
+            n.train_for_set(&xor_set, 1 + ((random() * (20.0)).floor() as i32), 1.005);
         } else {
-            n.train_for_set(&xor_set,
-                            1 + ((random() * (2.0)).floor() as i32),
-                            1.001);
+            n.train_for_set(&xor_set, 1 + ((random() * (2.0)).floor() as i32), 1.001);
         }
 
         let new_error = n.error_store;
@@ -223,4 +213,5 @@ fn main() {
             }
         }
     }
+    println!("{:?}", n.eval(&xor_set[3].input)[0]);
 }
