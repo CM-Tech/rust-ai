@@ -220,18 +220,19 @@ fn main() {
 
     //test_xor(&mut n);
     let mut last_error: f64 = 1.0;
+    let mut set=add_set;
     for i in 0.. {
         /*for xor_pair in &xor_set {
             n.train_for_pair(&xor_pair,10);
         }*/
         //n.train_for_pair(&add_set[((random()*(add_set.len() as f64)).floor() as usize)],10,1.08);
         if i % 50 == 0 {
-            n.train_for_set(&xor_set,
+            n.train_for_set(&set,
                             1 + ((random() * (20 as f64)).floor() as i32),
                             1.005);
         } else {
-            n.train_for_set(&xor_set,
-                            1 + ((random() * (2 as f64)).floor() as i32),
+            n.train_for_set(&set,
+                            1 + ((random() * (10 as f64)).floor() as i32),
                             1.001);
         }
 
@@ -242,7 +243,7 @@ fn main() {
             println!("-------------------");
             println!("error: {:?}", last_error);
             //test_error(&mut n,&add_set);
-            if n.set_error(&xor_set) == 0.0 {
+            if n.set_error(&set) == 0.0 {
                 break;
             }
         }
