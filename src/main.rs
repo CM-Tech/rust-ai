@@ -60,6 +60,29 @@ impl Layer {
         }
         output
     }
+    fn reverse(&self, output: &Vec<bool>) -> Vec<bool> {
+        let mut input: Vec<bool> = Vec::with_capacity(self.input_map.len());
+
+        for i in 0..self.invert.len() {
+            let j = i * 3;
+            if output[j + 2]^ self.invert[i] {
+                input.push(output[j + 1] ^ self.invert[i]);
+                input.push(output[j] ^ self.invert[i]);
+                output.push(output[j + 2] ^ self.invert[i]);
+            } else {
+                input.push(output[j] ^ self.invert[i]);
+                input.push(output[j + 1] ^ self.invert[i]);
+                input.push(output[j + 2] ^ self.invert[i]);
+            }
+
+        }
+        let mapped_ins: Vec<bool> = self.input_map
+            .clone()
+            .into_iter()
+            .map(|x| input[x])
+            .collect();
+        mapped_ins
+    }
 }
 #[derive(Clone)]
 struct Network {
@@ -77,6 +100,16 @@ impl Network {
             output = self.layers[i].eval(&output);
         }
         return output;
+    }
+    fn reverse(&mut self, output: &Vec<bool>) -> Vec<bool> {
+        let mut input: Vec<bool> = output.clone();
+        while input.len() < self.width * 3 {
+            input.push(false);
+        }
+        for i in (0..self.layers.len()).rev() {
+            input = self.layers[i].reverse(&input);
+        }
+        return input;
     }
     fn create(width: i32, depth: i32) -> Network {
         let mut layers = Vec::with_capacity(depth as usize);
