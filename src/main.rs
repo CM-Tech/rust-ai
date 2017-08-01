@@ -15,7 +15,7 @@ impl Layer {
         for i in 0..(size * 3) {
             input_map.push(i as usize);
         }
-        for i in 0..size {
+        for _ in 0..size {
             invert.push(false);
         }
         Layer {
@@ -60,12 +60,6 @@ impl Layer {
         }
         output
     }
-    fn clone(&mut self) -> Layer {
-        Layer {
-            input_map: self.input_map.clone(),
-            invert: self.invert.clone(),
-        }
-    }
 }
 struct Network {
     layers: Vec<Layer>,
@@ -87,7 +81,7 @@ impl Network {
         let mut layers = Vec::with_capacity(depth as usize);
         for i in 0..depth {
             layers.push(Layer::create(width));
-            for j in 0..width {
+            for _ in 0..width {
                 layers[i as usize].random_switch();
             }
         }
@@ -130,7 +124,7 @@ impl Network {
         }
     }
     fn random_switch(&mut self, switches: i32) {
-        for j in 0..switches {
+        for _ in 0..switches {
             let i = (random() * (self.layers.len() as f64)).floor() as usize;
             self.layers[i].random_switch();
         }
@@ -140,7 +134,7 @@ impl Network {
         n.random_switch(switches);
         let error1 = self.error(&pair.input, &pair.output);
         let error2 = n.error(&pair.input, &pair.output);
-        if (error2 < error1 * error_bar) {
+        if error2 < error1 * error_bar {
             self.layers = n.layers;
         }
     }
@@ -162,18 +156,6 @@ struct TrainingPair {
     input: Vec<bool>,
     output: Vec<bool>,
 }
-fn test_xor(network: &mut Network) {
-    println!("-------------------");
-    println!("eval 1.0,0.0: {:?}", network.eval(&vec![true, false]));
-    println!("eval 0.0,1.0: {:?}", network.eval(&vec![false, true]));
-    println!("eval 1.0,1.0: {:?}", network.eval(&vec![true, true]));
-    println!("eval 0.0,0.0: {:?}", network.eval(&vec![false, false]));
-    println!("error: {:?}", network.eval(&vec![false, false]));
-}
-fn test_error(network: &mut Network, set: &Vec<TrainingPair>) {
-    println!("-------------------");
-    println!("error: {:?}", network.set_error(set));
-}
 fn main() {
     let xor_set = vec![TrainingPair {
                            input: vec![true, false],
@@ -193,7 +175,7 @@ fn main() {
                        }];
     let mut n = Network::create(32, 35);
     let mut add_set = vec![];
-    for i in 0..50 {
+    for _ in 0..50 {
         let j = 1 + (random() * (10000 as f64)).floor() as i32;
         let bit_len = 32;
         let bin = format!("{:b}", j);
@@ -219,14 +201,13 @@ fn main() {
     }
 
     let mut last_error: f64 = 1.0;
-    let mut training_set=xor_set;
     for i in 0.. {
         if i % 50 == 0 {
-            n.train_for_set(&training_set,
+            n.train_for_set(&xor_set,
                             1 + ((random() * (20.0)).floor() as i32),
                             1.005);
         } else {
-            n.train_for_set(&training_set,
+            n.train_for_set(&xor_set,
                             1 + ((random() * (2.0)).floor() as i32),
                             1.001);
         }
@@ -237,7 +218,7 @@ fn main() {
             println!("iter: {:?}", i);
             println!("-------------------");
             println!("error: {:?}", last_error);
-            if n.set_error(&training_set) == 0.0 {
+            if n.set_error(&xor_set) == 0.0 {
                 break;
             }
         }
