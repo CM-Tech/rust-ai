@@ -43,6 +43,11 @@ impl Layer {
             self.input_map[j as usize] = a;
         }
     }
+    fn controlled_switch(&mut self,i:usize,j:usize) {
+        let a = self.input_map[i ] + 0;
+        self.input_map[i] = self.input_map[j] + 0;
+        self.input_map[j] = a;
+    }
     fn eval(&mut self, input: &Vec<bool>) -> Vec<bool> {
         self.inputs = input.clone();
         let mapped_ins: Vec<bool> = self.input_map
@@ -165,6 +170,75 @@ impl Network {
             self.layers[i].random_switch();
         }
     }
+    fn smart_invert(&mut self, pair:&TrainingPair,max_inverts:i32) {
+        let l = (random() * (self.layers.len() as f64-1.0)).floor() as usize+1;
+        let mut output: Vec<bool> = pair.input.clone();
+        while output.len() < self.width * 3 {
+            output.push(false);
+        }
+        for i in 0..l {
+            output = self.layers[i].eval(&output);
+        }
+        let mut input: Vec<bool> = pair.output.clone();
+        while input.len() < self.width * 3 {
+            input.push(false);
+        }
+        for i in (l..self.layers.len()).rev() {
+            input = self.layers[i].reverse(&input);
+        }
+        let mut inverts=0;
+        for i in 0..self.width{
+            if inverts>max_inverts{
+                break;
+            }
+            if input[i*3]!=output[i*3] &&input[i*3+1]!=output[i*3+1] &&input[i*3+2]!=output[i*3+2]{
+                self.layers[l].invert[i as usize]=!self.layers[l].invert[i as usize];
+                inverts+=1;
+            }
+        }
+        //println!("Inverts {:?}",inverts);
+    }
+    fn smart_switch(&mut self, pair:&TrainingPair, maxSwitches: i32) {
+        let l = (random() * (self.layers.len() as f64-1.0)).floor() as usize;
+        let mut output: Vec<bool> = pair.input.clone();
+        while output.len() < self.width * 3 {
+            output.push(false);
+        }
+        for i in 0..l {
+            output = self.layers[i].eval(&output);
+        }
+        let mut input: Vec<bool> = pair.output.clone();
+        while input.len() < self.width * 3 {
+            input.push(false);
+        }
+        for i in (l..self.layers.len()).rev() {
+            input = self.layers[i].reverse(&input);
+        }
+        let mut needFalse:Vec<usize>=vec![];
+        let mut needTrue:Vec<usize>=vec![];
+        for i in 0..self.width*3{
+            if input[i]!=output[i] {
+                let nF=needFalse.len() ;
+                let nT=needTrue.len();
+                if input[i]==false{
+                    needFalse.insert((random() * ((nF+ 1) as f64)).floor() as usize,i);
+                }else{
+                    needTrue.insert((random() * ((nT + 1) as f64)).floor() as usize,i);
+                }
+                
+            }
+        }
+        for i in 0..(maxSwitches as usize){
+            if i>=needTrue.len(){
+                break;
+            }
+            if i>=needFalse.len(){
+                break;
+            }
+            self.layers[l].controlled_switch(needFalse[i],needTrue[i]);
+
+        }
+    }
     fn train_for_pair(&mut self, pair: &TrainingPair, switches: i32, error_bar: f64) {
         let mut n = self.clone();
         n.random_switch(switches);
@@ -177,6 +251,25 @@ impl Network {
     fn train_for_set(&mut self, set: &Vec<TrainingPair>, switches: i32, error_bar: f64) {
         let mut n = self.clone();
         n.random_switch(switches);
+
+        let error2 = n.error_set(&set);
+        if error2 < self.error_store * error_bar {
+            let error1 = self.error_set(&set);
+            if error2 < error1 * error_bar {
+                self.layers = n.layers;
+                self.error_store = n.error_store;
+            }
+        }
+    }
+    fn smart_train_for_set(&mut self, set: &Vec<TrainingPair>, switches: i32, error_bar: f64) {
+        let mut n = self.clone();
+        //n.random_switch(switches);
+        /*for i in 0..set.len() {
+            //n.smart_invert(&set[i],1);
+        n.smart_switch(&set[i],switches);
+        }*/
+        n.smart_invert(&set[(random()*(set.len() as f64)) as usize],switches);
+        n.smart_switch(&set[(random()*(set.len() as f64)) as usize],switches);
 
         let error2 = n.error_set(&set);
         if error2 < self.error_store * error_bar {
@@ -211,7 +304,7 @@ fn main() {
                        }];
     let mut n = Network::create(32, 35);
     let mut add_set = vec![];
-    for _ in 0..50 {
+    for _ in 0..100 {
         let j = 1 + (random() * (10000 as f64)).floor() as i32;
         let bit_len = 32;
         let bin = format!("{:b}", j);
@@ -237,11 +330,12 @@ fn main() {
     }
 
     let mut last_error: f64 = 1.0;
+    let mut test_set=add_set;
     for i in 0.. {
-        if i % 50 == 0 {
-            n.train_for_set(&xor_set, 1 + ((random() * (20.0)).floor() as i32), 1.005);
+        if i % 10 == 0 {
+            n.train_for_set(&test_set, 1 + ((random() * (20.0)).floor() as i32), 1.005);
         } else {
-            n.train_for_set(&xor_set, 1 + ((random() * (2.0)).floor() as i32), 1.001);
+            n.smart_train_for_set(&test_set, 10 + ((random() * (2.0)).floor() as i32), 1.001);
         }
 
         let new_error = n.error_store;
@@ -250,10 +344,10 @@ fn main() {
             println!("iter: {:?}", i);
             println!("-------------------");
             println!("error: {:?}", last_error);
-            if n.error_set(&xor_set) == 0.0 {
+            if n.error_set(&test_set) == 0.0 {
                 break;
             }
         }
     }
-    println!("{:?}", n.eval(&xor_set[3].input)[0]);
+    //println!("{:?}", n.eval(&xor_set[3].input)[0]);
 }
