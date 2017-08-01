@@ -105,7 +105,7 @@ impl Network {
         }
         tot / (expected.len() as f64)
     }
-    fn set_error(&mut self, set: &Vec<TrainingPair>) -> f64 {
+    fn error_set(&mut self, set: &Vec<TrainingPair>) -> f64 {
         let mut tot: f64 = 0.0;
 
         for i in 0..set.len() {
@@ -136,9 +136,9 @@ impl Network {
         let mut n = self.clone();
         n.random_switch(switches);
 
-        let error2 = n.set_error(&set);
+        let error2 = n.error_set(&set);
         if error2 < self.error_store * error_bar {
-            let error1 = self.set_error(&set);
+            let error1 = self.error_set(&set);
             if error2 < error1 * error_bar {
                 self.layers = n.layers;
                 self.error_store = n.error_store;
@@ -208,7 +208,7 @@ fn main() {
             println!("iter: {:?}", i);
             println!("-------------------");
             println!("error: {:?}", last_error);
-            if n.set_error(&xor_set) == 0.0 {
+            if n.error_set(&xor_set) == 0.0 {
                 break;
             }
         }
