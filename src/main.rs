@@ -1,174 +1,145 @@
-#[derive(Clone)]
-struct Synapse {
-    weight: f64,
-    value: f64,
-}
-//Neuron has input derivatives to effect prev layer and weight derivatives to change weights
-#[derive(Clone)]
+extern crate rand;
+
+use rand::random;
+
 struct Neuron {
-    synapses: Vec<Synapse>,
-    weight_derivatives: Vec<f64>,
-    value_derivatives: Vec<f64>,
+    delta: f64,
+    output: f64,
+    weights: Vec<f64>,
+    bias: f64,
 }
 impl Neuron {
-    fn update_inputs(&mut self, inputs: &Vec<f64>) {
-        for i in 0..self.synapses.len() {
-            self.synapses[i].value = inputs[i];
-        }
-    }
-    fn activate(&self) -> f64 {
-        let sum = self.synapses
-            .iter()
-            .fold(0.0, |acc, ref synapse| acc + synapse.value * synapse.weight);
-        1.0 / (1.0 + sum.exp())
-    }
-    fn calc_derivatives(&mut self) {
-        let sum = self.synapses
-            .iter()
-            .fold(0.0, |acc, ref synapse| acc + synapse.value * synapse.weight);
-        let base_grad = sum.exp() / (sum.exp() + 1.0) / (sum.exp() + 1.0);
-        let mut wderivatives = Vec::with_capacity(self.synapses.len());
-        let mut vderivatives = Vec::with_capacity(self.synapses.len());
-        for synapse in &self.synapses {
-            wderivatives.push(synapse.value * base_grad);
-            vderivatives.push(synapse.weight * base_grad);
-        }
-        self.weight_derivatives = wderivatives;
-        self.value_derivatives = vderivatives;
-    }
-    fn back_prop(&mut self, rate: f64, delta: f64) {
-        for i in 0..self.synapses.len() {
-            self.synapses[i].weight += delta * self.weight_derivatives[i] * rate;
-        }
-    }
-    fn create(inputs: i32) -> Neuron {
-        let synapse = Synapse {
-            weight: 0.5,
-            value: 0.0,
-        };
-        let synapses = vec![synapse; inputs as usize];
-        let wderivatives = vec![1.0; inputs as usize];
-        let vderivatives = vec![1.0; inputs as usize];
-
+    fn create(inputs: usize) -> Neuron {
         Neuron {
-            synapses: synapses,
-            weight_derivatives: wderivatives,
-            value_derivatives: vderivatives,
+            weights: (0..inputs).map(|_| random()).collect(),
+            output: 0.0,
+            delta: 0.0,
+            bias: random(),
         }
+    }
+
+    fn activate(&self, inputs: &Vec<f64>) -> f64 {
+        sigmoid(
+            self.weights
+                .iter()
+                .zip(inputs.iter())
+                .map(|(weight, input)| weight * input)
+                .sum::<f64>() / (inputs.len() as f64) + self.bias,
+        )
+    }
+
+    fn derivative(&self) -> f64 {
+        self.output * (1.0 - self.output)
     }
 }
-//Layer Only has one type of derivative to store (to back prop to prev layer) its of the inputs type
+
+fn sigmoid(n: f64) -> f64 {
+    1.0 / (1.0 + (-n).exp())
+}
+
 struct Layer {
     neurons: Vec<Neuron>,
 }
 impl Layer {
-    fn update_inputs(&mut self, inputs: &Vec<f64>) {
-        for i in 0..self.neurons.len() {
-            self.neurons[i].update_inputs(inputs);
+    fn create(inputs: usize, outputs: usize) -> Layer {
+        Layer {
+            neurons: (0..outputs).map(|_| Neuron::create(inputs)).collect(),
         }
-    }
-    fn ev(&self) -> Vec<f64> {
-        self.neurons
-            .iter()
-            .map(|ref iter| iter.activate())
-            .collect()
-    }
-    fn back_prop(&mut self, rate: f64, deltas: &Vec<f64>) -> Vec<f64> {
-        for (j, neuron) in self.neurons.iter_mut().enumerate() {
-            neuron.calc_derivatives();
-            neuron.back_prop(rate, deltas[j]);
-        }
-        let in_len = self.neurons[0].synapses.len();
-        let mut derivatives = vec![0.0; in_len];
-        for i in 0..in_len {
-            for j in 0..self.neurons.len() {
-                derivatives[i] +=
-                    self.neurons[j].value_derivatives[i] / (self.neurons.len() as f64) * deltas[j];
-            }
-        }
-        derivatives
-    }
-    fn create(inputs: i32, outputs: i32) -> Layer {
-        let neurons = vec![Neuron::create(inputs); outputs as usize];
-        Layer { neurons: neurons }
     }
 }
+
 struct Network {
     layers: Vec<Layer>,
 }
 impl Network {
-    fn ev(&mut self, inputs: &Vec<f64>) -> Vec<f64> {
-        self.layers
-            .iter_mut()
-            .fold(inputs.clone(), |prev, ref mut curr| {
-                curr.update_inputs(&prev);
-                curr.ev()
-            })
-    }
-    fn back_prop(&mut self, rate: f64, deltas: Vec<f64>) {
-        self.layers
-            .iter_mut()
-            .rev()
-            .fold(deltas.clone(),
-                  |delta_grad, ref mut layer| layer.back_prop(rate, &delta_grad));
-    }
-    fn train_for_pair(&mut self, rate: f64, pair: &TrainingPair) {
-        let mut deltas = self.ev(&pair.input);
-        for i in 0..deltas.len() {
-            deltas[i] = pair.output[i] - deltas[i];
+    fn create(layer_sizes: &Vec<usize>) -> Network {
+        Network {
+            layers: (0..)
+                .zip(layer_sizes[1..].iter())
+                .map(|(i, layer)| Layer::create(layer_sizes[i], *layer))
+                .collect(),
         }
-        self.back_prop(rate, deltas);
     }
-    fn create(inputs: i32, layer_sizes: &Vec<i32>, outputs: i32) -> Network {
-        let mut layers = Vec::with_capacity(2 + layer_sizes.len());
-        layers.push(Layer::create(inputs, inputs));
-        if layer_sizes.len() > 0 {
-            layers.push(Layer::create(inputs, layer_sizes[0]));
-            for i in 1..layer_sizes.len() {
-                layers.push(Layer::create(layer_sizes[i - 1], layer_sizes[i]));
-            }
-            layers.push(Layer::create(layer_sizes[layer_sizes.len() - 1], outputs));
-        } else {
-            layers.push(Layer::create(inputs, outputs));
-        }
-        Network { layers: layers }
-    }
-}
-struct TrainingPair {
-    input: Vec<f64>,
-    output: Vec<f64>,
-}
-fn test_xor(network: &mut Network) {
-    println!("-------------------");
-    println!("eval 1.0,0.0: {:?}", network.ev(&vec![1.0, 0.0]));
-    println!("eval 0.0,1.0: {:?}", network.ev(&vec![0.0, 1.0]));
-    println!("eval 1.0,1.0: {:?}", network.ev(&vec![1.0, 1.0]));
-    println!("eval 0.0,0.0: {:?}", network.ev(&vec![0.0, 0.0]));
-}
-fn main() {
-    let xor_set = [TrainingPair {
-                       input: vec![1.0, 0.0],
-                       output: vec![1.0],
-                   },
-                   TrainingPair {
-                       input: vec![0.0, 1.0],
-                       output: vec![1.0],
-                   },
-                   TrainingPair {
-                       input: vec![0.0, 0.0],
-                       output: vec![0.0],
-                   },
-                   TrainingPair {
-                       input: vec![1.0, 1.0],
-                       output: vec![0.0],
-                   }];
-    let mut n = Network::create(2, &vec![2, 2], 1);
 
-    test_xor(&mut n);
-    for _ in 0..10000 {
-        for xor_pair in &xor_set {
-            n.train_for_pair(0.1, &xor_pair);
+    fn forward_prop(&mut self, row: &Vec<f64>) -> Vec<f64> {
+        self.layers.iter_mut().fold(row.clone(), |inputs, layer| {
+            layer
+                .neurons
+                .iter()
+                .map(|neuron| neuron.activate(&inputs))
+                .collect()
+        })
+    }
+
+    fn forward_set(&mut self, row: &Vec<f64>) -> Vec<f64> {
+        self.layers.iter_mut().fold(
+            row.iter()
+                .map(|&x| x + (random::<f64>() * 0.02) - 0.01)
+                .collect(),
+            |inputs, layer| {
+                layer
+                    .neurons
+                    .iter_mut()
+                    .map(|neuron| {
+                        neuron.output = neuron.activate(&inputs);
+                        neuron.output
+                    })
+                    .collect()
+            },
+        )
+    }
+
+    fn backpropagate(&mut self, row: &Vec<f64>, expected: &Vec<f64>) {
+        for i in (0..self.layers.len()).rev() {
+            let prev: Vec<f64> = if i == 0 {
+                row.clone()
+            } else {
+                self.layers[i - 1]
+                    .neurons
+                    .iter()
+                    .map(|x| x.output)
+                    .collect()
+            };
+            for j in 0..self.layers[i].neurons.len() {
+                let err = if i == self.layers.len() - 1 {
+                    expected[j] - self.layers[i].neurons[j].output
+                } else {
+                    self.layers[i + 1]
+                        .neurons
+                        .iter()
+                        .map(|neuron| neuron.weights[j] * neuron.delta)
+                        .sum()
+                };
+                let ref mut neuron = self.layers[i].neurons[j];
+                neuron.delta = err * neuron.derivative();
+                for k in 0..prev.len() {
+                    neuron.weights[k] += neuron.delta * prev[k];
+                }
+                neuron.bias += neuron.delta;
+            }
         }
     }
-    test_xor(&mut n);
+}
+
+fn main() {
+    let xor_sets = vec![
+        (vec![0., 0.], vec![0.0]),
+        (vec![0., 1.], vec![1.0]),
+        (vec![1., 0.], vec![1.0]),
+        (vec![1., 1.], vec![0.0]),
+    ];
+    let mut network = Network::create(&vec![2, 2, 1]);
+    for i in 1.. {
+        let &(ref input, ref output) = &xor_sets[i % 4];
+        network.forward_set(input);
+        network.backpropagate(input, output);
+
+        if i % 5000 == 0 {
+            println!("\nIteration: {:?}", i);
+            println!("eval 0,0: {:?}", network.forward_prop(&vec![0., 0.]));
+            println!("eval 0,1: {:?}", network.forward_prop(&vec![0., 1.]));
+            println!("eval 1,0: {:?}", network.forward_prop(&vec![1., 0.]));
+            println!("eval 1,1: {:?}", network.forward_prop(&vec![1., 1.]));
+        }
+    }
 }
