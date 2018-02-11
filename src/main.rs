@@ -37,26 +37,21 @@ fn sigmoid(n: f64) -> f64 {
     1.0 / (1.0 + (-n).exp())
 }
 
-struct Layer {
-    neurons: Vec<Neuron>,
-}
-impl Layer {
-    fn create(inputs: usize, outputs: usize) -> Layer {
-        Layer {
-            neurons: (0..outputs).map(|_| Neuron::create(inputs)).collect(),
-        }
-    }
-}
+type Layer = Vec<Neuron>;
 
 struct Network {
     layers: Vec<Layer>,
 }
 impl Network {
-    fn create(layer_sizes: &Vec<usize>) -> Network {
+    fn create(layer_sizes: Vec<usize>) -> Network {
         Network {
             layers: (0..)
                 .zip(layer_sizes[1..].iter())
-                .map(|(i, layer)| Layer::create(layer_sizes[i], *layer))
+                .map(|(i, layer)| {
+                    (0..*layer)
+                        .map(|_| Neuron::create(layer_sizes[i]))
+                        .collect()
+                })
                 .collect(),
         }
     }
@@ -64,7 +59,6 @@ impl Network {
     fn forward_prop(&mut self, row: &Vec<f64>) -> Vec<f64> {
         self.layers.iter_mut().fold(row.clone(), |inputs, layer| {
             layer
-                .neurons
                 .iter()
                 .map(|neuron| neuron.activate(&inputs))
                 .collect()
@@ -72,45 +66,34 @@ impl Network {
     }
 
     fn forward_set(&mut self, row: &Vec<f64>) -> Vec<f64> {
-        self.layers.iter_mut().fold(
-            row.iter()
-                .map(|&x| x + (random::<f64>() * 0.02) - 0.01)
-                .collect(),
-            |inputs, layer| {
-                layer
-                    .neurons
-                    .iter_mut()
-                    .map(|neuron| {
-                        neuron.output = neuron.activate(&inputs);
-                        neuron.output
-                    })
-                    .collect()
-            },
-        )
+        self.layers.iter_mut().fold(row.clone(), |inputs, layer| {
+            layer
+                .iter_mut()
+                .map(|neuron| {
+                    neuron.output = neuron.activate(&inputs);
+                    neuron.output
+                })
+                .collect()
+        })
     }
 
-    fn backpropagate(&mut self, row: &Vec<f64>, expected: &Vec<f64>) {
+    fn backpropagate(&mut self, input: &Vec<f64>, expected: &Vec<f64>) {
         for i in (0..self.layers.len()).rev() {
             let prev: Vec<f64> = if i == 0 {
-                row.clone()
+                input.clone()
             } else {
-                self.layers[i - 1]
-                    .neurons
-                    .iter()
-                    .map(|x| x.output)
-                    .collect()
+                self.layers[i - 1].iter().map(|x| x.output).collect()
             };
-            for j in 0..self.layers[i].neurons.len() {
+            for j in 0..self.layers[i].len() {
                 let err = if i == self.layers.len() - 1 {
-                    expected[j] - self.layers[i].neurons[j].output
+                    expected[j] - self.layers[i][j].output
                 } else {
                     self.layers[i + 1]
-                        .neurons
                         .iter()
                         .map(|neuron| neuron.weights[j] * neuron.delta)
                         .sum()
                 };
-                let ref mut neuron = self.layers[i].neurons[j];
+                let ref mut neuron = self.layers[i][j];
                 neuron.delta = err * neuron.derivative();
                 for k in 0..prev.len() {
                     neuron.weights[k] += neuron.delta * prev[k];
@@ -122,15 +105,15 @@ impl Network {
 }
 
 fn main() {
-    let xor_sets = vec![
+    let xor_sets = [
         (vec![0., 0.], vec![0.0]),
         (vec![0., 1.], vec![1.0]),
         (vec![1., 0.], vec![1.0]),
         (vec![1., 1.], vec![0.0]),
     ];
-    let mut network = Network::create(&vec![2, 2, 1]);
+    let mut network = Network::create(vec![2, 2, 1]);
     for i in 1.. {
-        let &(ref input, ref output) = &xor_sets[i % 4];
+        let (ref input, ref output) = xor_sets[i % 4];
         network.forward_set(input);
         network.backpropagate(input, output);
 
