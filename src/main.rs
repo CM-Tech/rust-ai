@@ -2,15 +2,15 @@ extern crate rand;
 
 use rand::random;
 
-struct Neuron {
+struct Perceptron {
     delta: f64,
     output: f64,
     weights: Vec<f64>,
     bias: f64,
 }
-impl Neuron {
-    fn create(inputs: usize) -> Neuron {
-        Neuron {
+impl Perceptron {
+    fn create(inputs: usize) -> Perceptron {
+        Perceptron {
             weights: (0..inputs).map(|_| random()).collect(),
             output: 0.0,
             delta: 0.0,
@@ -24,7 +24,7 @@ impl Neuron {
                 .iter()
                 .zip(inputs.iter())
                 .map(|(weight, input)| weight * input)
-                .sum::<f64>() / (inputs.len() as f64) + self.bias,
+                .sum::<f64>() + self.bias,
         )
     }
 
@@ -37,7 +37,7 @@ fn sigmoid(n: f64) -> f64 {
     1.0 / (1.0 + (-n).exp())
 }
 
-type Layer = Vec<Neuron>;
+type Layer = Vec<Perceptron>;
 
 struct Network {
     layers: Vec<Layer>,
@@ -49,7 +49,7 @@ impl Network {
                 .zip(layer_sizes[1..].iter())
                 .map(|(i, layer)| {
                     (0..*layer)
-                        .map(|_| Neuron::create(layer_sizes[i]))
+                        .map(|_| Perceptron::create(layer_sizes[i]))
                         .collect()
                 })
                 .collect(),
@@ -60,7 +60,7 @@ impl Network {
         self.layers.iter_mut().fold(row.clone(), |inputs, layer| {
             layer
                 .iter()
-                .map(|neuron| neuron.activate(&inputs))
+                .map(|perceptron| perceptron.activate(&inputs))
                 .collect()
         })
     }
@@ -69,9 +69,9 @@ impl Network {
         self.layers.iter_mut().fold(row.clone(), |inputs, layer| {
             layer
                 .iter_mut()
-                .map(|neuron| {
-                    neuron.output = neuron.activate(&inputs);
-                    neuron.output
+                .map(|perceptron| {
+                    perceptron.output = perceptron.activate(&inputs);
+                    perceptron.output
                 })
                 .collect()
         })
@@ -90,15 +90,15 @@ impl Network {
                 } else {
                     self.layers[i + 1]
                         .iter()
-                        .map(|neuron| neuron.weights[j] * neuron.delta)
+                        .map(|perceptron| perceptron.weights[j] * perceptron.delta)
                         .sum()
                 };
-                let ref mut neuron = self.layers[i][j];
-                neuron.delta = err * neuron.derivative();
+                let ref mut perceptron = self.layers[i][j];
+                perceptron.delta = err * perceptron.derivative();
                 for k in 0..prev.len() {
-                    neuron.weights[k] += neuron.delta * prev[k];
+                    perceptron.weights[k] += perceptron.delta * prev[k] * 0.1;
                 }
-                neuron.bias += neuron.delta;
+                perceptron.bias += perceptron.delta * 0.1;
             }
         }
     }
@@ -113,11 +113,12 @@ fn main() {
     ];
     let mut network = Network::create(vec![2, 2, 1]);
     for i in 1.. {
-        let (ref input, ref output) = xor_sets[i % 4];
-        network.forward_set(input);
-        network.backpropagate(input, output);
+        for &(ref input, ref output) in xor_sets.iter() {
+            network.forward_set(input);
+            network.backpropagate(input, output);
+        }
 
-        if i % 5000 == 0 {
+        if i % 1000 == 0 {
             println!("\nIteration: {:?}", i);
             println!("eval 0,0: {:?}", network.forward_prop(&vec![0., 0.]));
             println!("eval 0,1: {:?}", network.forward_prop(&vec![0., 1.]));
